@@ -1,0 +1,8 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0.67||
+agimpacts|stem|9ceb5c8ee43dd5a4|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19261.8144590126s|2f2b3e9456e22897|331895|rds|local|vector|||0.51||
+CGIAR_cleaned|stem|d147c0dbcd97ef85|12f100d30af3d574|d34efdc0abcc56db|-1579145594||t19261.7997592439s|fbb0ae8b391a84f9|270394|rds|local|vector|||32.42||
+CGIAR_data|stem|c45a0cd6c5c6bcec|1fdb4a88bf2a10e7|3315c12e4d4733f9|-404003982||t19261.7893821751s|fd957bc84cadbb16|270964|rds|local|vector|||0.56||
+file|stem|c377118190194364|7b226d985c441b32|ef46db3751d8e999|-1301001980|processed/agimpacts_full.csv|t19204.227082616s|0834e4685ce5eeb7|6288264|file|local|vector|||0.62||
+get_data_from_csv|function|175afe49df78aa3e|||||||||||||||
+remove_na|function|7c2c0f3ddfa52831|||||||||||||||
