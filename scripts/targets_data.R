@@ -28,7 +28,7 @@ tar_option_set(packages = packages,
 
 # CGIAR and Monfreda data prep --------------------------------------------
 
-
+# corresponds to script 3 in agimpacts-precip repo
 targets_data_monfreda <- list(
   tar_target(ag, "processed/agimpacts_final.csv", format = "file"),
   tar_target(agimpacts, get_data_from_csv(ag)),
@@ -40,6 +40,7 @@ targets_data_monfreda <- list(
                                     "data/Monfreda data/wheat_Production.tif"), format = "file"),
   tar_target(worldmap, rworldmap::getMap(resolution = "coarse")),
   tar_target(worldmap_clean, cleangeo::clgeo_Clean(worldmap)),
+  # this takes a long time
   tar_target(crop_production_country, extract_country_crop_production(
     files=monfreda_prod_files,
     map_boundaries=worldmap_clean)
@@ -79,6 +80,7 @@ targets_data_monfreda <- list(
 
 # Crop calendar (Sacks and MIRCA) data prep ---------------------------------------------------------
 
+# corresponds to script 04 in agimpacts-precip repo
 targets_data_crop_calendar <- list(
   tar_target(file_sacks, nc_folder_path("Sacks data")),
   tar_target(crop_calendar_list, read_sacks(file_sacks)),
@@ -104,7 +106,9 @@ targets_data_crop_calendar <- list(
 
 targets_data_cru <- list(
   # first - work with CRU temperature data
+  # corresponds to script 05_1 in agimpacts-precip repo
   tar_target(cru_data_tmp, read_cru_data("cru_ts4.05.1901.2020.tmp.dat.nc")),
+  # this takes a long time
   tar_target(cru_country_list_tmp, extract_country_cru_data(
     raster=cru_data_tmp,
     map_boundaries=worldmap_clean,
@@ -118,8 +122,26 @@ targets_data_cru <- list(
                data1=crop_season_country_dt,
                data2=cru_country_df_tmp,
                var="tmp"
-             ))
+             )),
   # second - work with CRU precipitation data
+  # corresponds to script 05_2 in agimpacts-precip repo
+  # simply recode using same target functions as above ^_^
+  tar_target(cru_data_pre, read_cru_data("cru_ts4.05.1901.2020.pre.dat.nc")),
+  # this takes a long time
+  tar_target(cru_country_list_pre, extract_country_cru_data(
+    raster=cru_data_pre,
+    map_boundaries=worldmap_clean,
+    weights=crop_production_rasters
+  )),
+  tar_target(cru_country_df_pre, create_df_country_cru_data(
+    list=cru_country_list_pre,
+    map_boundaries=worldmap_clean)),
+  tar_target(growing_season_pre_production,
+             prep_baseline_gs_vars(
+               data1=crop_season_country_dt,
+               data2=cru_country_df_pre,
+               var="pre"
+             ))
 )
 
 

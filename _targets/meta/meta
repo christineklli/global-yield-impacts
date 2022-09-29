@@ -2,8 +2,8 @@ name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iterat
 a|stem|bab98a042597d909|802380d6e0b61ea6|edc8caa5d52c424c|-902917054||t19264.6124083532s|b7888e6cd0ba439f|894|qs|local|vector|||0.04||
 add_crop_production_country_name|function|5b129764108b2b66|||||||||||||||
 ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0.67||
-agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19264.6464461374s|09bc64786f1e2783|209059|qs|local|vector|||0.53||
-AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19264.6464552182s|213256b23c735206|152466|qs|local|vector|||0.18||
+agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19264.8116731286s|09bc64786f1e2783|209059|qs|local|vector|||0.86||
+AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19264.8592962423s|213256b23c735206|152466|qs|local|vector|||0.22||
 AGIMPACTS_MAIN|stem|8292d86574a7fa37|cc6579e2779068ab|599221b4c2843d83|-1743815918||t19264.6240712806s|29be6e7a764d6af5|159969|qs|local|vector|||0.09||
 CGIAR_cleaned|stem|d147c0dbcd97ef85|12f100d30af3d574|d34efdc0abcc56db|-1579145594||t19261.7997592439s|fbb0ae8b391a84f9|270394|rds|local|vector|||32.42||
 CGIAR_data|stem|c45a0cd6c5c6bcec|1fdb4a88bf2a10e7|3315c12e4d4733f9|-404003982||t19261.7893821751s|fd957bc84cadbb16|270964|rds|local|vector|||0.56||
@@ -29,8 +29,11 @@ crop_season_concordance|stem|1c0d55ebd1b3a687|19ce74383ee99c81|94315d3f76b1b887|
 crop_season_country|stem|e3760f58f3f46ee3|b540defbc3dd6b6a|725ee430073b836d|719765867||t19264.6124025043s|e4d5a2cea906206b|98669|qs|local|vector|||269.55||
 crop_season_country_dt|stem|15cca7de3aa791e8|aafb6830e42a436c|8c73de2e17a3b319|-405434162||t19264.6433694101s|15771222bedd4069|103316|qs|local|vector|||0.03||
 crop_season_df|stem|2603fe8eb89867f8|c5321006c995ef4f|33d982e175acdf48|-2085480186||t19264.642866059s|dabdb45e340cef26|2713270|qs|local|vector|||7.16||
+cru_country_df_pre|stem|828a205158a6b8cd|3b80272718040029|bea03820c74652f0|-466845407||t19264.8593034109s|88773b5ccb391cb5|1943091|qs|local|vector|||0.07||
 cru_country_df_tmp|stem|43840ef57168aeee|36a49a4fb33367d8|be59ff3a2a925313|-1740608097||t19264.6022093733s|007c576af52b0c79|1862754|qs|local|vector|||0.06||
+cru_country_list_pre|stem|09cd4b97583a03cf|36c510b0b70def39|2e7be66227da8d80|1707258046||t19264.8592875206s|6a37cf49ee23e9f7|1947067|qs|local|vector|||4113.25||
 cru_country_list_tmp|stem|f3dde8ebc2e3fa2a|30f0e5a15ac5e41a|ee3369879bc01222|-780663933||t19264.5848832221s|ac9b15c9ff6fffc8|1840326|qs|local|vector|||1738.74||
+cru_data_pre|stem|d74a050650f2be82|b7c280f82c61abeb|4213b1a924dbc97f|1385297987||t19264.811655889s|55fd5a7165732479|7731|qs|local|vector|||16.33|varname used is preIf that is not correct, you can set it to one of pre, stn|
 cru_data_tmp|stem|4fb65e46b0436de5|f015e388e6195958|4213b1a924dbc97f|989868049||t19264.543444565s|726429ce4186c419|7733|qs|local|vector|||1.05|varname used is tmpIf that is not correct, you can set it to one of tmp, stn|
 extend_raster_crop_season|function|df73bd03b714cc26|||||||||||||||
 extract_country_crop_production|function|37f33efaaa30e117|||||||||||||||
@@ -40,6 +43,7 @@ file|stem|c377118190194364|7b226d985c441b32|ef46db3751d8e999|-1301001980|process
 file_sacks|stem|3fd292371d6c714c|83097cfa97200ea3|2581e9e248ee6f7e|1376479935||t19264.5434576867s|24d52ebf1535bba2|123|qs|local|vector|||0||
 get_data_from_csv|function|175afe49df78aa3e|||||||||||||||
 get_monfreda_data|function|7d533f0a1a06d6ea|||||||||||||||
+growing_season_pre_production|stem|c4931d378eeb99a9|c03abc291375a5d6|8214629f9263831a|193166721||t19264.8593141237s|4ae6eb7a75ef0888|710230|qs|local|vector|||0.31|data length 736 is not a submultiple or multiple of the number of rows 62|
 growing_season_tmp_1950_2010|stem|fab7eba360402a1e|e3bc067edcbae04b|6d1303e54195808c|-2115186||t19264.6433854595s|90ba856c392979f6|579819|qs|local|vector|||0.03||
 growing_season_tmp_production|stem|087559cc1e8f03a2|63beae36063c51bd|f2ce54081a5450b8|1184291221||t19264.6464703052s|d8e5c7e949214bab|662901|qs|local|vector|||0.64|data length 736 is not a submultiple or multiple of the number of rows 62|
 join_cgiar_data_country_rank|function|b5686d9647448659|||||||||||||||
@@ -69,7 +73,7 @@ ready_crop_calendar_for_joining|function|c9088c3d51564d65|||||||||||||||
 remove_na|function|7c2c0f3ddfa52831|||||||||||||||
 s|stem|103399d96b3f8b12|8f8ee3e270011a72|94355c13a372229a|331032406||t19264.6022633283s|b76f56164e2b0c53|639|qs|local|vector|||0.02||
 targets_data_crop_calendar|object|1b705649458f6a2a|||||||||||||||
-targets_data_cru|object|7b5445334bdcbf39|||||||||||||||
+targets_data_cru|object|23618b61f94ec1fb|||||||||||||||
 targets_data_monfreda|object|946c9c3fb405cdc5|||||||||||||||
 targets_data_prep|object|61866be002acd966|||||||||||||||
 targets_data_sacks|object|13f68bd90e4404b9|||||||||||||||
