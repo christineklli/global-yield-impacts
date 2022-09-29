@@ -17,25 +17,44 @@ library(targets)
 # which has to be in the main working directory outside of the scripts folder
 
 library(targets)
-source("scripts/functions.R") 
+source("scripts/functions_data.R") 
+source("scripts/targets_data.R")
 
-tar_option_set(packages = c("readr", "dplyr", "ggplot2", "naniar"))
+# need to define packages in this file
+packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
+              "Hmisc", "zoo", "lubridate", "networkD3", "viridis", "maptools","ggmap", 
+              "maps", "sp", "sf", "geojsonio",  "rgdal", "broom", "plotly", "htmlwidgets", "gridExtra",
+              "raster", "gridBase", "ggthemes", "grid", "tidync", "ncmeta","stars", "devtools", 
+              "RNetCDF", "here", "rworldmap", "R.utils", "stringr", "compareDF", "utils",
+              "ncdf4", "mice", "miceadds", "Rcpp", "VIM", "cvms", "groupdata2", "exactextractr",
+              "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
+              "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
+              "readr", "terra", "qs")
+
+
+tar_option_set(packages = packages,
+               memory = "transient", # activate transient memory
+               garbage_collection = TRUE, # activate garbage collection
+               format = "qs" # efficient storage format, need to first install qs
+               ) 
 
 # targets pipeline - eventually modularise this by modelling stage
+
+# note that we skip create targets for web scraping - retain script 1
+# not sure how targets() interacts with json/web environments, try later
+#tar_target(file, "processed/agimpacts_full.csv", format = "file"),
+#tar_target(CGIAR_data, get_data_from_csv(file)),
+#tar_target(CGIAR_cleaned, remove_na(CGIAR_data)),
+# note that we skip targets for the manual data validation - retain script 2
+# because it is just too hard to rewrite...for now
+# thus start from scraped + validated data agimpacts_final.csv
+
 list(
-  # note that we skip create targets for web scraping - retain script 1
-  # not sure how targets() interacts with json/web environments, try later
-  #tar_target(file, "processed/agimpacts_full.csv", format = "file"),
-  #tar_target(CGIAR_data, get_data_from_csv(file)),
-  #tar_target(CGIAR_cleaned, remove_na(CGIAR_data)),
-  # note that we skip targets for the manual data validation - retain script 2
-  # because it is just too hard to rewrite...for now
-  tar_target(ag, "processed/agimpacts_final.csv", format = "file"),
-  tar_target(agimpacts, get_data_from_csv(ag))
-  # note we need to convert some variables from chr to factor later
-  # work with Monfreda data FIRST and THEN make all changes to agimpacts in one function
-  
+  targets_data_monfreda,
+  targets_data_crop_calendar,
+  targets_data_cru
 )
+      
 
 # note these commands must be commented out or will be recursive
 # since file _targets.R runs all code in this script automatically
