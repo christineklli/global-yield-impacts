@@ -490,4 +490,100 @@ prep_baseline_gs_vars <- function(data1, data2, var){
     filter(!NAME == "Ashmore and Cartier Is.")
 }
   
+
+# calculate cgiar point estimate-specific baseline gs vars ----------------
+
+filter_baseline_periods_cgiar <- function(data){
   
+  # clean this set of groups
+  data %>% 
+  group_by(Crop, Country2, Baseline.start, Baseline.end) %>% 
+  summarise(n=n()) %>% 
+  mutate(nyears = Baseline.end - Baseline.start + 1) %>% 
+  #print(n=Inf) # 340 groups  
+  filter(!is.na(Baseline.start) | !is.na(Baseline.end)) %>% 
+  mutate(Baseline.start = replace(
+    Baseline.start, 
+    Baseline.start == 1901, 1950)) 
+  # manually changed to 1950 - at some point can compute over 1901-2001
+  
+}
+  
+create_dt_baseline_gs_var <- function(data, var, gs_production_data){
+  
+  # loop through unique baseline period 'groups' in cgiar data
+
+  list <- lapply(1:nrow(data), function(i){ # should be 333 rows/groups
+    
+    period_i <- data[i,]
+    
+    baseline_period <- c(eval(expr(
+      period_i$Baseline.start)):eval(expr(
+        period_i$Baseline.end)))
+    
+    baseline_vars <- paste(var, baseline_period, sep = "_")
+    
+    # average over temperature values in baseline period columns 
+    avg <- gs_production_data %>%
+      filter(ISO_A2 %in% period_i$Country2 & baseline_crop %in% period_i$Crop) %>% 
+      dplyr::select(all_of(baseline_vars)) %>% # use external vector to select columns in growing_season_tmp_series
+      rowMeans() 
+    
+    avg <- as.data.frame(avg)
+    
+  })
+ 
+  # convert list to dt
+  dt <- rbindlist(list, idcol = "i") 
+  data %>% 
+    ungroup() %>% 
+    mutate(index = row_number()) %>% # 333 rows/groups
+    left_join(dt, by = c("index"="i"))
+    
+}
+  # create df of country crop production data
+
+create_crop_country_volume_df <- function(raster, map_boundaries){
+  
+  crops <- c("Maize", "Rice", "Soybean", "Wheat")
+  
+  sum_production_country <- exactextractr::exact_extract(
+    raster::stack(raster), map_boundaries, 'sum') 
+  # note this is at 5 arcminute spatial resolution
+  
+  sum_production_country %>% 
+    setNames(paste0("production.", crops)) %>% 
+    mutate(Country2=map_boundaries$ISO_A2,
+           NAME=map_boundaries$NAME) %>% 
+    as.data.table() 
+}
+
+
+  join_baseline_gs_vars_to_cgiar <- function(data1,data2,data3,data4){
+    
+    data1 %>% 
+      left_join(data2, 
+                by = c("Crop", "Country2", "Baseline.start", "Baseline.end")) %>% 
+      dplyr::select(!c("n", "nyears")) %>% 
+      rename(Baseline_tmp = avg) %>% # note we are renaming from
+      # Baseline_tmp_weighted to Baseline_tmp; 
+      # this will need to be adjusted for future targets in all future scripts
+      left_join(data3,
+                by = c("Crop", "Country2", "Baseline.start", "Baseline.end")) %>% 
+      dplyr::select(!c("n", "nyears")) %>% 
+      rename(Baseline_pre = avg) %>% 
+      # 'final' data cleaning
+      mutate(Reference_fact=as.factor(Reference),
+             Reference_int=as.integer(Reference_fact),
+             Country2_fact=as.factor(Country2),
+             Adaptation=ifelse(Adaptation %in% c("No",NA),"No",Adaptation),
+             adapt_dummy = as.factor(if_else(Adaptation %in% c("No", "NA"), 0, 1))) %>% 
+      # aggregate crop types into 4 main crop categories
+      mutate(crop_pooled = case_when(Crop %in% c("Wheat", "Wheat (Spring)", "Wheat (Durum)", "Wheat (Winter)", "Wheat (Rainfed)", "Wheat (Irrigated)") ~ "Wheat",
+                                     Crop %in% c("Rice", "Rice (Irrigated)", "Rice (Rainfed)") ~ "Rice",
+                                     Crop %in% c("Maize", "Maize (Monsoon)", "Maize (Winter)") ~ "Maize",
+                                     Crop == "Soybean" ~ "Soybean")) %>% 
+      # join with country production volume
+      left_join(data4, by="Country2")
+  }
+

@@ -2,9 +2,13 @@ name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iterat
 a|stem|bab98a042597d909|802380d6e0b61ea6|edc8caa5d52c424c|-902917054||t19264.6124083532s|b7888e6cd0ba439f|894|qs|local|vector|||0.04||
 add_crop_production_country_name|function|5b129764108b2b66|||||||||||||||
 ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0.67||
-agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19264.8116731286s|09bc64786f1e2783|209059|qs|local|vector|||0.86||
-AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19264.8592962423s|213256b23c735206|152466|qs|local|vector|||0.22||
+agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19265.6673428734s|09bc64786f1e2783|209059|qs|local|vector|||1.3||
+AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19265.6673577657s|213256b23c735206|152466|qs|local|vector|||0.31||
+AGIMPACTS_bs_tp|stem|b4ae16043e7e9662|112a26ca6718487d|8880144e58f318d0|643954055||t19265.6673734466s|5e299722b3c921e5|191212|qs|local|vector|||0.25||
 AGIMPACTS_MAIN|stem|8292d86574a7fa37|cc6579e2779068ab|599221b4c2843d83|-1743815918||t19264.6240712806s|29be6e7a764d6af5|159969|qs|local|vector|||0.09||
+baseline_avg_pre|stem|bd544682d1957d1d|d1c31b8a13fd5670|5f32244591d51d82|375512429||t19265.6652981325s|4f8daab8cd32b861|4552|qs|local|vector|||46.11||
+baseline_avg_tmp|stem|b8a0371661a2946f|aac66737e2f812ab|a735acf597ef2c4d|-877680403||t19265.665767442s|348bf45aabe9f51b|4533|qs|local|vector|||39.81||
+baseline_periods|stem|3cbbf24ef2b9a76c|bae7365609667826|61f3152dba4c0ed2|1370465894||t19265.6326541132s|901a47c84ae798fc|2628|qs|local|vector|||0.2||
 CGIAR_cleaned|stem|d147c0dbcd97ef85|12f100d30af3d574|d34efdc0abcc56db|-1579145594||t19261.7997592439s|fbb0ae8b391a84f9|270394|rds|local|vector|||32.42||
 CGIAR_data|stem|c45a0cd6c5c6bcec|1fdb4a88bf2a10e7|3315c12e4d4733f9|-404003982||t19261.7893821751s|fd957bc84cadbb16|270964|rds|local|vector|||0.56||
 clean_cgiar_data|function|b7b7d10c896125b5|||||||||||||||
@@ -14,9 +18,12 @@ country_crop_rank|stem|9690f781714db3ec|4fd0dfe06c687625|b3e42df101d76e6f|-13760
 country_crop_ranked|stem|65774b005cb845d0|89b851f5ad001e64|ca9303b9a69abd16|-1295303087||t19262.4573494919s|454d22d428aba82c|8770|rds|local|vector|||0||
 country_crop_ranked_df|function|266da3d6d84c2793|||||||||||||||
 country_crop_ranked_df2|function|7a26443ef84b92bd|||||||||||||||
+country_production_volume|stem|3894ceffcf4269ec|e2324fa39d34e85f|fc90924d306ecfc6|433342302||t19265.6620277421s|5005c34ef61ae389|6289|qs|local|vector|||14.8||
 create_crop_calendar|function|01da16b27c16a5e2|||||||||||||||
+create_crop_country_volume_df|function|b225fc850a4d2c30|||||||||||||||
 create_crop_season_concordance|function|4f36db57e60129c3|||||||||||||||
 create_df_country_cru_data|function|579cdad3accbb441|||||||||||||||
+create_dt_baseline_gs_var|function|38002c642bf697c7|||||||||||||||
 create_dt_country_crop_season|function|23a1b18fd96f3cbd|||||||||||||||
 crop_calendar|stem|face4a07011771f8|b0023403e7fae184|cda041232f466555|290581634||t19264.5977166725s|8bd1486d01309b8c|716864|qs|local|vector|||0.48||
 crop_calendar_df|stem|8b3bbf0b524b86cb|df5e05669153190d|7f693d202148f082|-1511377165||t19264.6022574935s|bc627074651eb2da|301068|qs|local|vector|||1.89||
@@ -41,11 +48,13 @@ extract_country_crop_season|function|c1a7d19454137bc1|||||||||||||||
 extract_country_cru_data|function|a1629e7ab34779ac|||||||||||||||
 file|stem|c377118190194364|7b226d985c441b32|ef46db3751d8e999|-1301001980|processed/agimpacts_full.csv|t19204.227082616s|0834e4685ce5eeb7|6288264|file|local|vector|||0.62||
 file_sacks|stem|3fd292371d6c714c|83097cfa97200ea3|2581e9e248ee6f7e|1376479935||t19264.5434576867s|24d52ebf1535bba2|123|qs|local|vector|||0||
+filter_baseline_periods_cgiar|function|cc2a7f15727b2ebb|||||||||||||||
 get_data_from_csv|function|175afe49df78aa3e|||||||||||||||
 get_monfreda_data|function|7d533f0a1a06d6ea|||||||||||||||
 growing_season_pre_production|stem|c4931d378eeb99a9|c03abc291375a5d6|8214629f9263831a|193166721||t19264.8593141237s|4ae6eb7a75ef0888|710230|qs|local|vector|||0.31|data length 736 is not a submultiple or multiple of the number of rows 62|
 growing_season_tmp_1950_2010|stem|fab7eba360402a1e|e3bc067edcbae04b|6d1303e54195808c|-2115186||t19264.6433854595s|90ba856c392979f6|579819|qs|local|vector|||0.03||
 growing_season_tmp_production|stem|087559cc1e8f03a2|63beae36063c51bd|f2ce54081a5450b8|1184291221||t19264.6464703052s|d8e5c7e949214bab|662901|qs|local|vector|||0.64|data length 736 is not a submultiple or multiple of the number of rows 62|
+join_baseline_gs_vars_to_cgiar|function|0bad0e62c38f3c25|||||||||||||||
 join_cgiar_data_country_rank|function|b5686d9647448659|||||||||||||||
 join_country_crop_ranked|function|6f26655b66818813|||||||||||||||
 join_multicountry|function|cfa37529d5216676|||||||||||||||
@@ -73,7 +82,7 @@ ready_crop_calendar_for_joining|function|c9088c3d51564d65|||||||||||||||
 remove_na|function|7c2c0f3ddfa52831|||||||||||||||
 s|stem|103399d96b3f8b12|8f8ee3e270011a72|94355c13a372229a|331032406||t19264.6022633283s|b76f56164e2b0c53|639|qs|local|vector|||0.02||
 targets_data_crop_calendar|object|1b705649458f6a2a|||||||||||||||
-targets_data_cru|object|23618b61f94ec1fb|||||||||||||||
+targets_data_cru|object|aa847e90f9024abe|||||||||||||||
 targets_data_monfreda|object|946c9c3fb405cdc5|||||||||||||||
 targets_data_prep|object|61866be002acd966|||||||||||||||
 targets_data_sacks|object|13f68bd90e4404b9|||||||||||||||

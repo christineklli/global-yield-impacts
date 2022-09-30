@@ -141,7 +141,39 @@ targets_data_cru <- list(
                data1=crop_season_country_dt,
                data2=cru_country_df_pre,
                var="pre"
+             )),
+  # calculate baseline cgiar temperature & precipitation data
+  # corresponds to script 06 in agimpacts-precip repo
+  # i.e. apply dynamic averaging to cgiar data points
+  tar_target(baseline_periods, filter_baseline_periods_cgiar(
+    data=AGIMPACTS_MAIN
+  )),
+  # calculate cgiar bs avg tmp
+  tar_target(baseline_avg_tmp, create_dt_baseline_gs_var(
+    data=baseline_periods,
+    var="tmp",
+    gs_production_data=growing_season_tmp_production
+  )),
+  # calculate cgiar bs avg pre
+  tar_target(baseline_avg_pre, create_dt_baseline_gs_var(
+    data=baseline_periods,
+    var="pre",
+    gs_production_data=growing_season_pre_production
+  )),
+  tar_target(country_production_volume, create_crop_country_volume_df(
+    raster=crop_production_rasters,
+    map_boundaries=worldmap_clean
+  )),
+  tar_target(AGIMPACTS_bs_tp,
+             join_baseline_gs_vars_to_cgiar(
+               data1=AGIMPACTS_MAIN,
+               data2=baseline_avg_tmp,
+               data3=baseline_avg_pre,
+               data4=country_production_volume
              ))
 )
+
+
+# yields data prep and joining with cgiar data --------------------------------------------------------
 
 
