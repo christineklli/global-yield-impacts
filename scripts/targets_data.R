@@ -29,7 +29,7 @@ tar_option_set(packages = packages,
 # CGIAR and Monfreda data prep --------------------------------------------
 
 # corresponds to script 3 in agimpacts-precip repo
-targets_data_monfreda <- list(
+targets_data_production <- list(
   tar_target(ag, "processed/agimpacts_final.csv", format = "file"),
   tar_target(agimpacts, get_data_from_csv(ag)),
   # note we need to convert some variables from chr to factor later
@@ -104,7 +104,7 @@ targets_data_crop_calendar <- list(
 
 # CRU temperature and precipitation data prep -----------------------------
 
-targets_data_cru <- list(
+targets_data_tmp_precip <- list(
   # first - work with CRU temperature data
   # corresponds to script 05_1 in agimpacts-precip repo
   tar_target(cru_data_tmp, read_cru_data("cru_ts4.05.1901.2020.tmp.dat.nc")),
@@ -175,5 +175,38 @@ targets_data_cru <- list(
 
 
 # yields data prep and joining with cgiar data --------------------------------------------------------
+
+targets_data_yields <- list(
+  tar_target(country_yields_list, extract_country_yields(
+    folder="GDHY data",
+    map_boundaries=worldmap_clean)
+  ),
+  tar_target(crop_yields_dt, wrangle_country_yields(country_yields_list)),
+  tar_target(AGIMPACTS_bs, join_crop_yields_cgiar(
+    data1=AGIMPACTS_bs_tp,
+    data2=crop_yields_dt
+  ))
+)
+
+
+# impute missing data -----------------------------------------------------
+
+# final data related step
+
+targets_impute <- list(
+  tar_target(imputed_data, impute_data(data=AGIMPACTS_bs)), 
+  # note there are warning messages about failure to converge
+  # degenerate Hessian with 1 negative eigenvalues
+  tar_target(imputed_plots, plot_imputed_data(
+    imp=imputed_data,
+    path1="results/figures/imp_convergence_plot.png"
+    #path2="imp_density_plot.png"
+  ), format="file"), # NOTE THIS DOES NOT WORK - FIX THIS LATER
+  # says plot file is missing
+  # strange because plotting with tar_read(imputed_data) does work
+  tar_target(crop_list_imp, wrangle_imputed_data(imputed_data)),
+  tar_target(crop_imputed_data, coalesce_imputed_data(crop_list_imp)),
+  tar_target(crop_imputed_rst_data, clean_imputed_data(crop_imputed_data))
+)
 
 

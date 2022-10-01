@@ -2,8 +2,9 @@ name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iterat
 a|stem|bab98a042597d909|802380d6e0b61ea6|edc8caa5d52c424c|-902917054||t19264.6124083532s|b7888e6cd0ba439f|894|qs|local|vector|||0.04||
 add_crop_production_country_name|function|5b129764108b2b66|||||||||||||||
 ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0.67||
-agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19265.6673428734s|09bc64786f1e2783|209059|qs|local|vector|||1.3||
-AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19265.6673577657s|213256b23c735206|152466|qs|local|vector|||0.31||
+agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19266.4755292915s|09bc64786f1e2783|209059|qs|local|vector|||0.55||
+AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19266.4755380594s|213256b23c735206|152466|qs|local|vector|||0.18||
+AGIMPACTS_bs|stem|5015a536c5498c66|16a31d1bc43e8ebe|00e675b3873b870a|-712265604||t19266.3679260273s|f5f1d7ba62dae41f|192801|qs|local|vector|||0.05||
 AGIMPACTS_bs_tp|stem|b4ae16043e7e9662|112a26ca6718487d|8880144e58f318d0|643954055||t19265.6673734466s|5e299722b3c921e5|191212|qs|local|vector|||0.25||
 AGIMPACTS_MAIN|stem|8292d86574a7fa37|cc6579e2779068ab|599221b4c2843d83|-1743815918||t19264.6240712806s|29be6e7a764d6af5|159969|qs|local|vector|||0.09||
 baseline_avg_pre|stem|bd544682d1957d1d|d1c31b8a13fd5670|5f32244591d51d82|375512429||t19265.6652981325s|4f8daab8cd32b861|4552|qs|local|vector|||46.11||
@@ -12,22 +13,30 @@ baseline_periods|stem|3cbbf24ef2b9a76c|bae7365609667826|61f3152dba4c0ed2|1370465
 CGIAR_cleaned|stem|d147c0dbcd97ef85|12f100d30af3d574|d34efdc0abcc56db|-1579145594||t19261.7997592439s|fbb0ae8b391a84f9|270394|rds|local|vector|||32.42||
 CGIAR_data|stem|c45a0cd6c5c6bcec|1fdb4a88bf2a10e7|3315c12e4d4733f9|-404003982||t19261.7893821751s|fd957bc84cadbb16|270964|rds|local|vector|||0.56||
 clean_cgiar_data|function|b7b7d10c896125b5|||||||||||||||
+clean_imputed_data|function|c9162aa532e4ac2b|||||||||||||||
+coalesce_imputed_data|function|0a919d8a7d6a184b|||||||||||||||
 continue|function|1b88153728b74364|||||||||||||||
 continue2|function|193450d1d368974b|||||||||||||||
 country_crop_rank|stem|9690f781714db3ec|4fd0dfe06c687625|b3e42df101d76e6f|-1376069474||t19264.6077607885s|57a5f90f60cae558|9988|qs|local|vector|||0.02||
 country_crop_ranked|stem|65774b005cb845d0|89b851f5ad001e64|ca9303b9a69abd16|-1295303087||t19262.4573494919s|454d22d428aba82c|8770|rds|local|vector|||0||
 country_crop_ranked_df|function|266da3d6d84c2793|||||||||||||||
 country_crop_ranked_df2|function|7a26443ef84b92bd|||||||||||||||
+country_crop_yields_lists|stem||cba80772dd6b059d|5a9131e0facb6fdd|2012259505||t19266.3543502213s||0|qs|local|vector|||11.91||subscript out of bounds
 country_production_volume|stem|3894ceffcf4269ec|e2324fa39d34e85f|fc90924d306ecfc6|433342302||t19265.6620277421s|5005c34ef61ae389|6289|qs|local|vector|||14.8||
+country_yields_list|stem|e2bb8b7d0f4e3db8|c8c0e6ecfffa5469|835030c31d7f4458|73361039||t19266.3679122894s|b553c0ff9df84325|79508|qs|local|vector|||162.07||
 create_crop_calendar|function|01da16b27c16a5e2|||||||||||||||
 create_crop_country_volume_df|function|b225fc850a4d2c30|||||||||||||||
 create_crop_season_concordance|function|4f36db57e60129c3|||||||||||||||
 create_df_country_cru_data|function|579cdad3accbb441|||||||||||||||
 create_dt_baseline_gs_var|function|38002c642bf697c7|||||||||||||||
 create_dt_country_crop_season|function|23a1b18fd96f3cbd|||||||||||||||
+crop.list.imp|stem|7ea445b6763a27e2|7a3bc6d87d83adb9|398ab8d7e4b563a5|-1574229463||t19266.4508959136s|4161ffb1a7f27cad|628914|qs|local|vector|||1.58|Number of logged events 2. Number of logged events 2. Number of logged events 2. Number of logged events 2|
 crop_calendar|stem|face4a07011771f8|b0023403e7fae184|cda041232f466555|290581634||t19264.5977166725s|8bd1486d01309b8c|716864|qs|local|vector|||0.48||
 crop_calendar_df|stem|8b3bbf0b524b86cb|df5e05669153190d|7f693d202148f082|-1511377165||t19264.6022574935s|bc627074651eb2da|301068|qs|local|vector|||1.89||
 crop_calendar_list|stem|eb4eacf9ad2caef9|cb6fb431919f4883|98058b791424928b|-1601424376||t19264.5435684131s|ececa62b24b2b395|790064|qs|local|vector|||2.41|as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE. as.is should be specified by the caller using TRUE|
+crop_imputed_data|stem|f5bfe66022f4b2f0|6e427dccc2e22159|ace3250fc9da6dc5|36698694||t19266.4624061948s|42b7220b58b91bb4|751063|qs|local|vector|||1.15||
+crop_imputed_rst_data|stem|0921594f6bd9069f|93286f1145b9f2b9|d9bf340ebd0a67a9|1414202830||t19266.4755516794s|efa3ca5f3cc1922a|1506098|qs|local|vector|||0.46||
+crop_list_imp|stem|ae54d4b6ccf8dca0|7a3bc6d87d83adb9|f47124aa5b86457a|7109958||t19266.4583974514s|47e6116937c80561|628893|qs|local|vector|||0.92|Number of logged events 2. Number of logged events 2. Number of logged events 2. Number of logged events 2|
 crop_production|stem|9a2bf206ea3d134c|c2105ad033d55514|eb6e94dc47860209|1584611412||t19262.4000762029s|bfda0e7a3fedd882|6481|rds|local|vector|||1151.85||
 crop_production_country|stem|0a807bffd5fa0643|1295fdd27a2a1964|31a7978dc7adc077|-379805378||t19264.5976844211s|5e8e93699aa0f73b|5755|qs|local|vector|||1105.58||
 crop_production_names|stem|7e737ed19a5ba67e|2ee99f6457a3863f|cd07f7aba26cef2b|1760394292||t19264.6022143905s|275719e403071fdb|6701|qs|local|vector|||0.01||
@@ -36,6 +45,7 @@ crop_season_concordance|stem|1c0d55ebd1b3a687|19ce74383ee99c81|94315d3f76b1b887|
 crop_season_country|stem|e3760f58f3f46ee3|b540defbc3dd6b6a|725ee430073b836d|719765867||t19264.6124025043s|e4d5a2cea906206b|98669|qs|local|vector|||269.55||
 crop_season_country_dt|stem|15cca7de3aa791e8|aafb6830e42a436c|8c73de2e17a3b319|-405434162||t19264.6433694101s|15771222bedd4069|103316|qs|local|vector|||0.03||
 crop_season_df|stem|2603fe8eb89867f8|c5321006c995ef4f|33d982e175acdf48|-2085480186||t19264.642866059s|dabdb45e340cef26|2713270|qs|local|vector|||7.16||
+crop_yields_dt|stem|1cee9bf683ce48b7|e0fdc11eaaf91e19|48069594931bee6d|-823502062||t19266.3679184968s|bfe75a2aecae5687|70334|qs|local|vector|||0.07||
 cru_country_df_pre|stem|828a205158a6b8cd|3b80272718040029|bea03820c74652f0|-466845407||t19264.8593034109s|88773b5ccb391cb5|1943091|qs|local|vector|||0.07||
 cru_country_df_tmp|stem|43840ef57168aeee|36a49a4fb33367d8|be59ff3a2a925313|-1740608097||t19264.6022093733s|007c576af52b0c79|1862754|qs|local|vector|||0.06||
 cru_country_list_pre|stem|09cd4b97583a03cf|36c510b0b70def39|2e7be66227da8d80|1707258046||t19264.8592875206s|6a37cf49ee23e9f7|1947067|qs|local|vector|||4113.25||
@@ -45,7 +55,9 @@ cru_data_tmp|stem|4fb65e46b0436de5|f015e388e6195958|4213b1a924dbc97f|989868049||
 extend_raster_crop_season|function|df73bd03b714cc26|||||||||||||||
 extract_country_crop_production|function|37f33efaaa30e117|||||||||||||||
 extract_country_crop_season|function|c1a7d19454137bc1|||||||||||||||
+extract_country_crop_yields|function|a577f3249f0af2a5|||||||||||||||
 extract_country_cru_data|function|a1629e7ab34779ac|||||||||||||||
+extract_country_yields|function|ea147bc6f2059460|||||||||||||||
 file|stem|c377118190194364|7b226d985c441b32|ef46db3751d8e999|-1301001980|processed/agimpacts_full.csv|t19204.227082616s|0834e4685ce5eeb7|6288264|file|local|vector|||0.62||
 file_sacks|stem|3fd292371d6c714c|83097cfa97200ea3|2581e9e248ee6f7e|1376479935||t19264.5434576867s|24d52ebf1535bba2|123|qs|local|vector|||0||
 filter_baseline_periods_cgiar|function|cc2a7f15727b2ebb|||||||||||||||
@@ -54,9 +66,13 @@ get_monfreda_data|function|7d533f0a1a06d6ea|||||||||||||||
 growing_season_pre_production|stem|c4931d378eeb99a9|c03abc291375a5d6|8214629f9263831a|193166721||t19264.8593141237s|4ae6eb7a75ef0888|710230|qs|local|vector|||0.31|data length 736 is not a submultiple or multiple of the number of rows 62|
 growing_season_tmp_1950_2010|stem|fab7eba360402a1e|e3bc067edcbae04b|6d1303e54195808c|-2115186||t19264.6433854595s|90ba856c392979f6|579819|qs|local|vector|||0.03||
 growing_season_tmp_production|stem|087559cc1e8f03a2|63beae36063c51bd|f2ce54081a5450b8|1184291221||t19264.6464703052s|d8e5c7e949214bab|662901|qs|local|vector|||0.64|data length 736 is not a submultiple or multiple of the number of rows 62|
+impute_data|function|24fdaece974cdefc|||||||||||||||
+imputed_data|stem|e95bacb6ffa2c7fd|1fbc038f99169e4d|2a70dedd59a88571|-1778213988||t19266.4105993813s|2f50e6668367ac05|647072|qs|local|vector|||1916.03|unable to evaluate scaled gradient. Model failed to converge degenerate  Hessian with 1 negative eigenvalues. Number of logged events 1202|
+imputed_plots|stem|0babd659d473b4ee|492efa962e70824f|8814cc40838ff63b|-937546045|results/figures/imp_convergence_plot.png|t19266.472449091s|f008763eb0bfd232|318|file|local|vector|||0.04||
 join_baseline_gs_vars_to_cgiar|function|0bad0e62c38f3c25|||||||||||||||
 join_cgiar_data_country_rank|function|b5686d9647448659|||||||||||||||
 join_country_crop_ranked|function|6f26655b66818813|||||||||||||||
+join_crop_yields_cgiar|function|9ce21a78a29a1dd7|||||||||||||||
 join_multicountry|function|cfa37529d5216676|||||||||||||||
 make_long_multicountry|function|717d5bc54f0bc9ee|||||||||||||||
 mirca_30mn|stem|05384195f6dc2069|6c000c3aa7463b1b|c89820d18a8c7abd|-794457062||t19264.5434214423s|8471b0dddcaec70e|6922737|qs|local|vector|||52.87||
@@ -68,6 +84,7 @@ multicountrycrop_long|stem|6b9aee1aacb442c9|350ebb252260febd|d56dd2ddae82385d|-1
 multicountrydf|stem|2b7cdd971da5f325|39ffe7e196a09dde|9fdd7ca6e6fe75bc|-491070355||t19264.6022195948s|09a4d2aca00000cb|947|qs|local|vector|||0.02||
 nc_folder_path|function|6d08a75a69bf31bb|||||||||||||||
 packages|object|51282f6ce8d1b2d5|||||||||||||||
+plot_imputed_data|function|84ee04dd561d49bf|||||||||||||||
 prep_baseline_gs_vars|function|1ad5f13d70a6305e|||||||||||||||
 rank_country_by_crop|function|a23063926d9db27b|||||||||||||||
 raster_crop|stem|b062e73f9fd05f43|3e25a43ded7699eb|1dce4852e0bd59b4|-1937959029||t19264.6433407756s|76aa1f1697d0c2f8|3037174|qs|local|vector|||38.9|NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf. NAs introduced by coercion. no nonmissing arguments to min returning Inf. no nonmissing arguments to max returning Inf|
@@ -85,10 +102,16 @@ targets_data_crop_calendar|object|1b705649458f6a2a|||||||||||||||
 targets_data_cru|object|aa847e90f9024abe|||||||||||||||
 targets_data_monfreda|object|946c9c3fb405cdc5|||||||||||||||
 targets_data_prep|object|61866be002acd966|||||||||||||||
+targets_data_production|object|946c9c3fb405cdc5|||||||||||||||
 targets_data_sacks|object|13f68bd90e4404b9|||||||||||||||
+targets_data_tmp_precip|object|aa847e90f9024abe|||||||||||||||
+targets_data_yields|object|c9f3c7ba8ead6568|||||||||||||||
+targets_impute|object|5e7f6365077d8cd4|||||||||||||||
 unlist_multicountry|function|4b40506ac4f071b6|||||||||||||||
 unwrap_multicountry|function|d2465f4e17957d01|||||||||||||||
 worldmap|stem|a69886d8d5c607ef|c8165020fcf24bff|c3b5fc02cdc369c1|1321348745||t19264.5434514576s|75ae8fcdbdf0f261|202919|qs|local|vector|||0.06||
 worldmap_clean|stem|4451a166437191ec|4fb9237a89d1219a|dd9a7d06e1c0e198|-139962131||t19264.5435089883s|581687ea8a611cc2|204572|qs|local|vector|||1.23||
+wrangle_country_yields|function|2bd5fd1dcfeeaf95|||||||||||||||
+wrangle_imputed_data|function|a814a7fa019b7517|||||||||||||||
 wrangle_mirca_data|function|ef5199ae259da495|||||||||||||||
 y|stem|40142a6a2475546b|a7a79ba4d1e795c8|9408e8766f291c70|-2137718520||t19264.6078316205s|ffb4af43dc842843|1239|qs|local|vector|||0.33||

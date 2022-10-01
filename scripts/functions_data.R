@@ -587,3 +587,260 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
       left_join(data4, by="Country2")
   }
 
+
+# read in and wrangle yields data -----------------------------------------
+
+  
+  extract_country_yields <- function(folder, map_boundaries){
+    
+    lapply(1:4, function(j){
+    
+      lapply(1:36, function(i,j) {
+        
+      crops_lwr <- c("maize", "rice", "soybean", "wheat")
+      
+      crop_yields_ts <- list.files(here("data", folder, crops_lwr[[j]]), pattern = "^.*\\.(nc4)$")
+      
+      data <- nc_open(here("data", folder, crops_lwr[[j]], crop_yields_ts[[i]]))
+      
+      lon <- ncvar_get(data, "lon")
+      lat <- ncvar_get(data, "lat")
+      yields <- ncvar_get(data, "var")
+      
+      fillvalue <- ncatt_get(data, "var", "_FillValue")
+      
+      yields[yields == fillvalue$value] <- NA
+      
+      # set dimension names and values to corresponding lon and lat values
+      dimnames(yields) <- list(lon = lon, lat = lat)
+      
+      # transform into dataframe
+      colnames(yields) <- c(seq(-89.75, 89.75, 0.5)) # lat
+      rownames(yields) <- c(seq(0.25, 359.75, 0.5)) # lon, this needs to be converted from -180 to 180 # -179.75, 179.75, 0.5
+      
+      # regularise by converting to raster and performing exactextractr 
+      
+      raster_yields <- raster(yields, xmn=-90, xmx=90, ymn=0, ymx=360, 
+                              crs=4326) # xmn=0.25, xmx=359.75
+      
+      m_raster_yields <- flip(t(raster_yields), direction = 'y')
+      
+      rm_raster_yields <- rotate(m_raster_yields)
+      
+      #plot(rm_raster_yields)
+      
+      #rasterVis::levelplot(rm_raster_yields, 
+      #                     col.regions = rev(terrain.colors(10000)))
+      # at = seq(-100,100))
+      
+      ghdy_country_yields <- exact_extract(rm_raster_yields, map_boundaries, 'mean')
+      
+      ghdy_country_yields %>% 
+        as.data.frame() %>%
+        rename(mean_yield = 1) %>% 
+        cbind(NAME = map_boundaries@data$NAME,
+              ISO_A2 = map_boundaries@data$ISO_A2)
+      
+      # this matches up well with UN FAO data  https://ourworldindata.org/crop-yields
+    }, 
+    j)}
+  )  
+  }
+  
+  wrangle_country_yields <- function(list){
+    
+    # get list into df
+    df <- lapply(1:4, function(i){
+      rbindlist(list[[i]], idcol = "year")})
+    
+    dt <- rbindlist(df, idcol = "crop_pooled")
+    
+    crop_numbers <- tribble(
+      ~id_col , ~crop_pooled,
+      "Maize", 1,
+      "Rice", 2,
+      "Soybean", 3,
+      "Wheat", 4
+    )
+    
+    dt %>%
+      left_join(crop_numbers, by ='crop_pooled') %>% 
+      mutate(Baseline.start = 1980+year) %>% 
+      dplyr::select(!c("crop_pooled", "year")) %>% 
+      rename(crop_pooled = "id_col") 
+  }
+  
+  join_crop_yields_cgiar <- function(data1, data2){
+    data1 %>% 
+      left_join(data2, 
+                by = c("crop_pooled", 
+                       "Baseline.start", 
+                       "NAME"="NAME", 
+                       "Country2_fact"="ISO_A2")) %>% 
+      rename(Baseline_yield = mean_yield)
+  }
+  
+
+# impute missing data -----------------------------------------------------
+
+  impute_data <- function(data){
+    # subset variables with missing values
+    incomplete_vars <- data[,c("Temp.Change", "Yield.Change", "Precipitation.change", "CO2.Change", 
+                               "Baseline_tmp", "Baseline_pre", "Baseline_yield",
+                               "Reference_int", "f_CO2", "C3", "C4", 
+                               "adapt_dummy", "crop_pooled", "Country2_fact")]
+    # create predictor matrix
+    pred_all <- make.predictorMatrix(incomplete_vars)
+    # exclude reference variable
+    pred_all[, "Reference_int"] <- -2
+    pred_all["Reference_int",] <- 0
+    
+    # predictive mean matching with multi-level imputation method
+    mice(incomplete_vars, 
+                pred = pred_all, 
+                meth = "2l.pmm", 
+                print = FALSE, 
+                m = 5, # create 5 imputed datasets 
+                maxit = 30, # 30 iterations
+                seed = 123) # make sure this is the same to replicate results
+    
+  }
+
+  
+  # FIX THIS - this does not work!
+  plot_imputed_data <- function(imp, path1){
+    
+    # plot and save imputed data density plot
+    png(path1)
+    plot(imp, layout=c(2,8))
+    dev.off()
+    path1
+    
+    # plot and save imputed data convergence
+    #png(here("results", "figures", path2))
+    #densityplot(imp)
+    #dev.off()
+    #path2
+    
+  }
+  
+  wrangle_imputed_data <- function(data){
+    
+    imp_long <- mice::complete(data, "long", include = T)
+    
+    # do grouping as normal
+    imp_long_maize <- imp_long[which(imp_long$crop_pooled == "Maize"),]
+    imp_long_rice <- imp_long[which(imp_long$crop_pooled == "Rice"),]
+    imp_long_soy <- imp_long[which(imp_long$crop_pooled == "Soybean"),]
+    imp_long_wheat <- imp_long[which(imp_long$crop_pooled == "Wheat"),]
+    
+    # turn back into mids objects to perform mice operations
+    imp_maize <- as.mids(imp_long_maize)
+    imp_rice <- as.mids(imp_long_rice)
+    imp_soy <- as.mids(imp_long_soy)
+    imp_wheat <- as.mids(imp_long_wheat)
+    
+    list(imp_maize, imp_rice, imp_soy, imp_wheat)
+  }
+  
+  # augment/coalesce imputed and original data
+  
+  coalesce_imputed_data <- function(list){
+    
+    impute_vars <- c("Temp.Change", "Yield.Change", "Precipitation.change", "CO2.Change", 
+                     "Baseline_tmp", "Baseline_pre", "Baseline_yield",
+                     "f_CO2")
+    
+    lapply(1:4, function(j){lapply(1:5, 
+                                   
+                                   select_imp_vars <- function(i, j){
+                                     
+                                     temp_imp <- cbind(Temp.Change = list[[j]]$imp$Temp.Change[i], 
+                                                       row_index_temp = which(is.na(list[[j]]$data$Temp.Change)))
+                                     
+                                     yield_imp <-cbind(Yield.Change = list[[j]]$imp$Yield.Change[i], 
+                                                       row_index_yield = which(is.na(list[[j]]$data$Yield.Change)))
+                                     
+                                     precip_imp <- cbind(Precipitation.change = list[[j]]$imp$Precipitation.change[i], 
+                                                         row_index_precip = which(is.na(list[[j]]$data$Precipitation.change)))
+                                     
+                                     CO2_imp <- cbind(CO2.Change = list[[j]]$imp$CO2.Change[i], 
+                                                      row_index_CO2 = which(is.na(list[[j]]$data$CO2.Change)))
+                                     
+                                     bstmp_imp <- cbind(Baseline_tmp = list[[j]]$imp$Baseline_tmp[i], 
+                                                        row_index_bstmp = which(is.na(list[[j]]$data$Baseline_tmp)))
+                                     
+                                     bspre_imp <- cbind(Baseline_pre = list[[j]]$imp$Baseline_pre[i], 
+                                                        row_index_bspre = which(is.na(list[[j]]$data$Baseline_pre)))
+                                     
+                                     bsyld_imp <- cbind(Baseline_yield = list[[j]]$imp$Baseline_yield[i], 
+                                                        row_index_bsyld = which(is.na(list[[j]]$data$Baseline_yield)))
+                                     
+                                     fCO2_imp <- cbind(f_CO2 = list[[j]]$imp$f_CO2[i], 
+                                                       row_index_fCO2 = which(is.na(list[[j]]$data$f_CO2)))
+                                     
+                                     combined <- list[[j]]$data %>% 
+                                       mutate(row_index = row_number()) %>% 
+                                       left_join(temp_imp, by = c("row_index" = "row_index_temp"))  %>% 
+                                       left_join(yield_imp, by = c("row_index" = "row_index_yield")) %>% 
+                                       left_join(precip_imp, by = c("row_index" = "row_index_precip")) %>% 
+                                       left_join(CO2_imp, by = c("row_index" = "row_index_CO2")) %>% 
+                                       left_join(bstmp_imp, by = c("row_index" = "row_index_bstmp")) %>% 
+                                       left_join(bspre_imp, by = c("row_index" = "row_index_bspre")) %>% 
+                                       left_join(bsyld_imp, by = c("row_index" = "row_index_bsyld")) %>% 
+                                       left_join(fCO2_imp, by = c("row_index" = "row_index_fCO2")) 
+                                     
+                                     # rename the imputed variables that have been joined
+                                     names(combined)[16:23] <- paste0(impute_vars, ".imp") 
+                                     
+                                     combined$precip <- coalesce(combined$Precipitation.change, combined$Precipitation.change.imp)
+                                     combined$yield <- coalesce(combined$Yield.Change, combined$Yield.Change.imp)
+                                     combined$temp <- coalesce(combined$Temp.Change, combined$Temp.Change.imp)
+                                     combined$CO2 <- coalesce(combined$CO2.Change, combined$CO2.Change.imp)
+                                     combined$bstmp <- coalesce(combined$Baseline_tmp, combined$Baseline_tmp.imp)
+                                     combined$bspre <- coalesce(combined$Baseline_pre, combined$Baseline_pre.imp)
+                                     combined$bsyld <- coalesce(combined$Baseline_yield, combined$Baseline_yield.imp)
+                                     combined$f_CO2 <- coalesce(combined$f_CO2, combined$f_CO2.imp)
+                                     
+                                     combined <- combined %>% 
+                                       dplyr::select(c("temp", "yield", "precip", "CO2", 
+                                                       "bstmp", "bspre", "bsyld",
+                                                       "f_CO2", "C3", "C4", "adapt_dummy", 
+                                                       "crop_pooled", 
+                                                       "Reference_int", "Country2_fact")) 
+                                     
+                                     names(combined)[1:8] <- impute_vars
+                                     
+                                     combined
+                                     
+                                   }                                  
+                                   
+                                   
+                                   , j)})
+    
+    
+    
+  }
+  
+  # clean final imputed data
+  
+  clean_imputed_data <- function(list){
+    
+    lapply(1:4, function(j){
+      lapply(1:5, 
+             function(i,j){
+      
+      list[[j]][[i]] %>% # Reference and Country2 already factorised
+        filter(Temp.Change >= 0 & Temp.Change <= 5) %>% 
+        mutate(crop_factor = as.factor(crop_pooled)) %>% 
+        mutate(Abs.Yield.Change = Yield.Change*Baseline_yield/100) %>%  # unit of measurement 
+        mutate(Pct.Precipitation.Change = Precipitation.change/100) %>% 
+        mutate(Yield.Level = Baseline_yield*(1+(Yield.Change/100))) %>% 
+        mutate(Reference_fact = as.factor(Reference_int)) 
+      
+    }
+             
+             , j)})
+    
+  }
+  

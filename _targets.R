@@ -50,9 +50,11 @@ tar_option_set(packages = packages,
 # thus start from scraped + validated data agimpacts_final.csv
 
 list(
-  targets_data_monfreda,
+  targets_data_production,
   targets_data_crop_calendar,
-  targets_data_cru
+  targets_data_tmp_precip,
+  targets_data_yields,
+  targets_impute
 )
       
 
