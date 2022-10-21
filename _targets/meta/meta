@@ -2,8 +2,8 @@ name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iterat
 a|stem|bab98a042597d909|802380d6e0b61ea6|edc8caa5d52c424c|-902917054||t19264.6124083532s|b7888e6cd0ba439f|894|qs|local|vector|||0.04||
 add_crop_production_country_name|function|5b129764108b2b66|||||||||||||||
 ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0.67||
-agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19266.4755292915s|09bc64786f1e2783|209059|qs|local|vector|||0.55||
-AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19266.4755380594s|213256b23c735206|152466|qs|local|vector|||0.18||
+agimpacts|stem|73adb54c6a86c472|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19286.4777797235s|09bc64786f1e2783|209059|qs|local|vector|||0.56||
+AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ad4fd8243f9b55ff|73191263||t19286.4777885061s|213256b23c735206|152466|qs|local|vector|||0.16||
 AGIMPACTS_bs|stem|5015a536c5498c66|16a31d1bc43e8ebe|00e675b3873b870a|-712265604||t19266.3679260273s|f5f1d7ba62dae41f|192801|qs|local|vector|||0.05||
 AGIMPACTS_bs_tp|stem|b4ae16043e7e9662|112a26ca6718487d|8880144e58f318d0|643954055||t19265.6673734466s|5e299722b3c921e5|191212|qs|local|vector|||0.25||
 AGIMPACTS_MAIN|stem|8292d86574a7fa37|cc6579e2779068ab|599221b4c2843d83|-1743815918||t19264.6240712806s|29be6e7a764d6af5|159969|qs|local|vector|||0.09||
@@ -52,6 +52,7 @@ cru_country_list_pre|stem|09cd4b97583a03cf|36c510b0b70def39|2e7be66227da8d80|170
 cru_country_list_tmp|stem|f3dde8ebc2e3fa2a|30f0e5a15ac5e41a|ee3369879bc01222|-780663933||t19264.5848832221s|ac9b15c9ff6fffc8|1840326|qs|local|vector|||1738.74||
 cru_data_pre|stem|d74a050650f2be82|b7c280f82c61abeb|4213b1a924dbc97f|1385297987||t19264.811655889s|55fd5a7165732479|7731|qs|local|vector|||16.33|varname used is preIf that is not correct, you can set it to one of pre, stn|
 cru_data_tmp|stem|4fb65e46b0436de5|f015e388e6195958|4213b1a924dbc97f|989868049||t19264.543444565s|726429ce4186c419|7733|qs|local|vector|||1.05|varname used is tmpIf that is not correct, you can set it to one of tmp, stn|
+define_model_spec|function|a4fe2908440a5a75|||||||||||||||
 extend_raster_crop_season|function|df73bd03b714cc26|||||||||||||||
 extract_country_crop_production|function|37f33efaaa30e117|||||||||||||||
 extract_country_crop_season|function|c1a7d19454137bc1|||||||||||||||
@@ -61,6 +62,7 @@ extract_country_yields|function|ea147bc6f2059460|||||||||||||||
 file|stem|c377118190194364|7b226d985c441b32|ef46db3751d8e999|-1301001980|processed/agimpacts_full.csv|t19204.227082616s|0834e4685ce5eeb7|6288264|file|local|vector|||0.62||
 file_sacks|stem|3fd292371d6c714c|83097cfa97200ea3|2581e9e248ee6f7e|1376479935||t19264.5434576867s|24d52ebf1535bba2|123|qs|local|vector|||0||
 filter_baseline_periods_cgiar|function|cc2a7f15727b2ebb|||||||||||||||
+fit_models|function|258cca46e70bb2b7|||||||||||||||
 get_data_from_csv|function|175afe49df78aa3e|||||||||||||||
 get_monfreda_data|function|7d533f0a1a06d6ea|||||||||||||||
 growing_season_pre_production|stem|c4931d378eeb99a9|c03abc291375a5d6|8214629f9263831a|193166721||t19264.8593141237s|4ae6eb7a75ef0888|710230|qs|local|vector|||0.31|data length 736 is not a submultiple or multiple of the number of rows 62|
@@ -77,13 +79,17 @@ join_multicountry|function|cfa37529d5216676|||||||||||||||
 make_long_multicountry|function|717d5bc54f0bc9ee|||||||||||||||
 mirca_30mn|stem|05384195f6dc2069|6c000c3aa7463b1b|c89820d18a8c7abd|-794457062||t19264.5434214423s|8471b0dddcaec70e|6922737|qs|local|vector|||52.87||
 mirca_df|stem|022b83891586792a|e1d13441ff40a8d9|2c2a0cea7bd0bdf9|-973495341||t19264.6427609951s|f3c0c19e2a28f60b|208766|qs|local|vector|||1.52||
+model_spec|object|73ce714cf0dbf1e7|||||||||||||||
+model_specifications|stem|08a05aac106503cb|1320a4d9f9c3fab4|1955795d91e74017|-1571513490||t19286.4465119365s|ab391a7f8bcafba3|473|qs|local|vector|||0.03||
+model_specitations|stem|e8af96492323bfbd|a75accd3af274a6c|f92558b31456ab5f|-717279277||t19266.8236436922s|7f6efb6d9faceac0|456|qs|local|vector|||43.74||
+models|stem|f8354849a2028399|e30c61dc7abff448|b72b7621c2943c44|-252836656||t19286.4807537243s|08c3ee22a4b0c4ba|42725917|qs|local|vector|||254.32||
 monfreda_prod_files|stem|257653cfadf51c7f|2a7e0c3d5782681d|a3dad144c40657ed|-1555758360|data/Monfreda data/maize_Production.tif*data/Monfreda data/rice_Production.tif*data/Monfreda data/soybean_Production.tif*data/Monfreda data/wheat_Production.tif|t19204.2270815611s|9438c6616197cdd1|13374136|file|local|vector|||0||
 multi_index|stem|df01e9737d5d1dbc|3f26e75a45e824e5|b71ee6a91f3f4404|1975667757||t19264.6124190614s|7b9fbe9e1d4a4b2c|1501|qs|local|vector|||0.02||
 multicountrycrop|stem|07de8dab0f5f475b|1b2eed555460b3d7|c5b3524d35699dda|288872307||t19264.597700704s|657d480088037280|839|qs|local|vector|||0.21||
 multicountrycrop_long|stem|6b9aee1aacb442c9|350ebb252260febd|d56dd2ddae82385d|-1614529977||t19264.6023783166s|e718667724d81e56|1039|qs|local|vector|||0||
 multicountrydf|stem|2b7cdd971da5f325|39ffe7e196a09dde|9fdd7ca6e6fe75bc|-491070355||t19264.6022195948s|09a4d2aca00000cb|947|qs|local|vector|||0.02||
 nc_folder_path|function|6d08a75a69bf31bb|||||||||||||||
-packages|object|51282f6ce8d1b2d5|||||||||||||||
+packages|object|3da724c3dc22d1be|||||||||||||||
 plot_imputed_data|function|84ee04dd561d49bf|||||||||||||||
 prep_baseline_gs_vars|function|1ad5f13d70a6305e|||||||||||||||
 rank_country_by_crop|function|a23063926d9db27b|||||||||||||||
@@ -107,6 +113,7 @@ targets_data_sacks|object|13f68bd90e4404b9|||||||||||||||
 targets_data_tmp_precip|object|aa847e90f9024abe|||||||||||||||
 targets_data_yields|object|c9f3c7ba8ead6568|||||||||||||||
 targets_impute|object|5e7f6365077d8cd4|||||||||||||||
+targets_model|object|3fec688c2087d5d7|||||||||||||||
 unlist_multicountry|function|4b40506ac4f071b6|||||||||||||||
 unwrap_multicountry|function|d2465f4e17957d01|||||||||||||||
 worldmap|stem|a69886d8d5c607ef|c8165020fcf24bff|c3b5fc02cdc369c1|1321348745||t19264.5434514576s|75ae8fcdbdf0f261|202919|qs|local|vector|||0.06||

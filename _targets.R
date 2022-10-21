@@ -19,6 +19,8 @@ library(targets)
 library(targets)
 source("scripts/functions_data.R") 
 source("scripts/targets_data.R")
+source("scripts/functions_model.R")
+source("scripts/targets_model.R")
 
 # need to define packages in this file
 packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
@@ -29,7 +31,7 @@ packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "gg
               "ncdf4", "mice", "miceadds", "Rcpp", "VIM", "cvms", "groupdata2", "exactextractr",
               "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
               "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
-              "readr", "terra", "qs")
+              "readr", "terra", "qs", "rlang")
 
 
 tar_option_set(packages = packages,
@@ -54,7 +56,8 @@ list(
   targets_data_crop_calendar,
   targets_data_tmp_precip,
   targets_data_yields,
-  targets_impute
+  targets_impute,
+  targets_model
 )
       
 

@@ -1,0 +1,85 @@
+# (5) For each crop, predict each of 4 model specifications x 5 imputed datasets on 24 GCMs x 4 time periods
+# Pooling order:
+  # (4) For each crop, and each of 4 model specifications, 24 GCMs and 4 time periods, POOL OVER IMPUTATIONS (m)
+      # take avg of predictions across 5 imputed models - for predicted mean, sd and 2.5 and 97.5 pct
+      # there are special formulas for taking avg across imputed models - see 14 predict gridded lines ~480
+  # (3) For each crop, 4 model specifications, and 4 time periods, POOL OVER GCMs (i)
+      # take avg, sd, 10th and 90th percentile of mean predictions across 24 GCMs - and avg of sd, 2.5 and 97.5 pct predictions
+  # (2) Evaluate all 4 model specifications, comparing GLMM and GAMM, and % Yield Change vs Abs Yield Change - POOL OVER/SELECT MODEL SPEC [k]
+  # (2) Pick one response model (% vs Abs) and either a) GLMM or GAMM, or b) ensemble GLMM + GAMM by pooling, maintain between model variance
+  # (2) End up with predictions[[crop]][[time period]] - a 2-level list
+# Name each set of predictions at each level according to how many levels
+
+# read in preidcted models
+# crop_models[[model]][[crop]][[imputation]]; [[k]][[j]][[i]]
+crop_models <- readRDS(here("results", "models", "crop_models.RData"))
+
+# read in prediction data
+# prediction_data[[crop]][[time period]][[GCM]]; [[k]][[j]][[i]] - need to rearrange such that align index for crops in both lists to [[j]][[k]][[i]]
+prediction_data <- readRDS(here("processed", "prediction_data.RData"))
+
+# j = crop, l = time period, i = GCM (prediction_data)
+# k = model specification, j = crop, m = imputed dataset (crop_models)
+
+# lapply over 5 different elements?!
+
+# remove NAs from prediction data o/w get error message about replacement not being multiple of replacement length
+# there is something odd about NAs in Baseline_yield - they do not seem to line up with the same pixels
+# with NAs for baseline tmp weighted etc
+# is this because of an error in how baseline_yield was calculated and merged? or just bc of diff data source?
+
+
+prediction_data_complete_cases <- lapply(1:4, function(k){ # crops = k - highest level in three-level list; 1:4
+  lapply(1:4, function(j, k){ # time period = j; 1:4
+    lapply(1:24, function(i,j,k){ # GCM = i; 1:24
+      prediction_data[[k]][[j]][[i]] %>% 
+        #mutate(ncell=row_number()) %>% # this is needed to keep track of which pixels the complete cases are, for rasterising predictions later
+        filter(complete.cases(.)) # na.omit or drop_na also works
+            }, j, k) 
+  }, k)}) # only predicting for 3877 pixels for maize; 1630 pixels for rice; 2624 for soy, 4370 for wheat
+# based on NAs for baseline temperature and precipitation for those crops
+# this may nt be enough? compared to last time? need to understand which variables are driving the NA
+# and how this may have changed since agimpacts/
+
+saveRDS(prediction_data_complete_cases, here("processed", "prediction_data_complete_cases.RData"))
+
+predict_gridded_level_5 <- function(m,i,l,j,k){ # this order, together with the function below, 
+  # ensures that the list goes k (model), j (crop), l (time period), i (GCM), m (imputed)
+          gammit::predict_gamm(crop_models[[k]][[j]][[m]],
+                             prediction_data_complete_cases[[j]][[l]][[i]], 
+                             #exclude = c("s(Country2_fact)", "s(Reference_fact)"), 
+                             re_form = c("s(Country2_fact)"), 
+                             keep_prediction_data = TRUE,
+                             newdata.guaranteed = TRUE,
+                             se.fit = TRUE 
+        )
+        }
+
+prediction_gridded_level_5 <- lapply(1, function(k){ # k = model spec
+  lapply(1, function(j, k){ # j = crop 
+    lapply(1, function(l, j, k){ # l = time period 
+      lapply(1, function(i, l , j, k){ # i = GCM
+        lapply(1, predict_gridded_level_5, i, l, j, k) # m = imputed
+      }, l, j, k)
+    }, j, k) 
+  }, k)
+  }) 
+
+# warning message that many factor levels were not in original fit; this makes sense because we only fit models
+# on a limited subset of countries in the CGIAR data
+
+# rasterise this example prediction
+
+predictions_complete <- data.frame(lon = coords_countries$lon, lat = coords_countries$lat) %>%
+  left_join(dplyr::select(
+    prediction_gridded_level_5[[1]][[1]][[1]][[1]][[1]], 
+    prediction.fit, lon, lat), 
+    by = c("lon", "lat"))
+  
+raster_prediction <- rasterFromXYZ(predictions_complete) 
+# max decline for this example prediction is -27%, max is 43%!
+
+rasterVis::levelplot(raster_prediction, 
+                     col.regions = rev(terrain.colors(10000)))
+
+# This is really not enough pixels - we need more pixels! doing complete cases took out too many rows
