@@ -455,6 +455,7 @@ lapply(2:4, function(i){
 
 saveRDS(bs_2015_vars, here("processed", "bs_2015_vars.RData"))
 
+bs_2015_vars <- readRDS(here("processed", "bs_2015_vars.RData"))
 # do some checks that worldmap_clean ISO_A2 as factor produces same factor levels as coords_Countries
 
 worldmap_clean@data %>% 

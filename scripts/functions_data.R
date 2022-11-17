@@ -225,6 +225,11 @@ read_sacks <- function(files){
     crop_calendar_df$crop <- files[i]
     crop_calendar_df$crop <- substr(crop_calendar_df$crop, 1, 
                                  nchar(crop_calendar_df$crop)-22)
+
+    # incredibly problematic - the lon and lats have floating point decimals that are extremely small
+    # these need to be rounded to 2 digits!!
+    crop_calendar_df$lon <- round(crop_calendar_df$lon,2)
+    crop_calendar_df$lat <- round(crop_calendar_df$lat,2)
     
     crop_calendar_df
     
@@ -742,6 +747,8 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
     
     list(imp_maize, imp_rice, imp_soy, imp_wheat)
   }
+
+  
   
   # augment/coalesce imputed and original data
   

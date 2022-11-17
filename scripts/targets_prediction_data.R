@@ -1,0 +1,183 @@
+
+packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
+              "Hmisc", "zoo", "lubridate", "networkD3", "viridis", "maptools","ggmap", 
+              "maps", "sp", "sf", "geojsonio",  "rgdal", "broom", "plotly", "htmlwidgets", "gridExtra",
+              "raster", "gridBase", "ggthemes", "grid", "tidync", "ncmeta","stars", "devtools", 
+              "RNetCDF", "here", "rworldmap", "R.utils", "stringr", "compareDF", "utils",
+              "ncdf4", "mice", "miceadds", "Rcpp", "VIM", "cvms", "groupdata2", "exactextractr",
+              "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
+              "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
+              "readr", "terra", "qs")
+
+tar_option_set(packages = packages,
+               memory = "transient", # activate transient memory
+               garbage_collection = TRUE, # activate garbage collection
+               format = "qs" # efficient storage format, need to first install qs
+) 
+
+# pipeline to create prediction data
+
+# contents of script 13 in agimpacts-precip.RProj
+
+targets_prediction_data_cru <- list(
+  tar_target(crop_season_extended_subset,
+             manipulate_crop_season(
+               data=crop_calendar, 
+               raster=raster_crop_season
+             )),
+  # create CRU temp prediction data 
+  tar_target(tmp_2011_2020_df,
+             create_cru_prediction_data(
+               file="cru_ts4.05.2011.2020.tmp.dat.nc",
+               var_name="tmp"
+             )),
+  # create CRU pre prediction data
+  tar_target(pre_2011_2020_df,
+             create_cru_prediction_data(
+               file="cru_ts4.05.2011.2020.pre.dat.nc",
+               var_name="pre"
+             )),
+  # calculate mean annual temp for 2015
+  tar_target(tmp_mean_2015,
+             mean_cru_year_var(
+               data=tmp_2011_2020_df, 
+               var="tmp",
+               var_2015=tmp_2015
+             )),
+  # calculate mean annual precip for 2015
+  tar_target(pre_mean_2015,
+             mean_cru_year_var(
+               data=pre_2011_2020_df,
+               var="pre",
+               var_2015=pre_2015
+             )),
+  # calculate baseline average growing season temp and precip for each year of 2015-2020 from CRU data 
+  tar_target(bs_years_tmp,
+             calc_bs_years_vars(
+               bs_years=bs_years,
+               calc_bs_var=calc_bs_var,
+               data=tmp_2011_2020_df,
+               var="tmp",
+               crop_season_extended_subset=crop_season_extended_subset 
+             )),
+  tar_target(bs_years_pre,
+             calc_bs_years_vars(
+               bs_years=bs_years,
+               calc_bs_var=calc_bs_var,
+               data=pre_2011_2020_df,
+               var="pre",
+               crop_season_extended_subset=crop_season_extended_subset
+             )),
+  tar_target(bs_years_tmp_pre,
+             combine_bs_years_tmp_pre(
+               data1=bs_years_tmp,
+               data2=bs_years_pre
+             )),
+  tar_target(bs_2015_tmp_pre_list,
+             extract_bs_2015_tmp_pre(
+               data=bs_years_tmp_pre
+             ))
+  
+)
+
+# create yield data
+# note that script 13 in agimpacts-precip has lots of different yield datasets
+# but due to missing data in GAEZ and GDHY we use only the outdated Monfreda data
+
+targets_prediction_data_monf <- list(
+  tar_target(monfreda_yield_files,
+             c("data/Monfreda data/maize_YieldPerHectare.tif",
+               "data/Monfreda data/rice_YieldPerHectare.tif",
+               "data/Monfreda data/soybean_YieldPerHectare.tif",
+               "data/Monfreda data/wheat_YieldPerHectare.tif"),
+             format="file"),
+  # rasterise
+  tar_target(crop_yield_monf_agg,
+             rasterise_crop_yield_monf(
+               files=monfreda_yield_files
+             )),
+  # convert to dt
+  tar_target(crop_yield_monf_dt,
+             make_crop_yield_monf_dt(
+               raster=crop_yield_monf_agg
+             )),
+  # merge tmp, precip and yield data for baseline year 2015
+  tar_target(bs_2015_tmp_pre_yld,
+             merge_cru_monf_prediction_data(
+               data1=bs_2015_tmp_pre_list,
+               data2=crop_yield_monf_dt
+             ))
+)
+
+targets_prediction_data_misc <- list(
+  # add country and adapt dummy 
+  tar_target(points,
+             identify_points(
+               data=bs_2015_tmp_pre_yld
+             )),
+  tar_target(coords_admin,
+             coords2admin(points)),
+  tar_target(coords_iso,
+             coords2iso(points)),
+  tar_target(coords_countries,
+             combine_coords(
+               data1=points,
+               data2=coords_admin,
+               data3=coords_iso
+             )),
+  tar_target(bs_2015_vars,
+             create_bs_2015_vars(
+               data1=bs_2015_tmp_pre_yld,
+               data2=coords_countries
+             ))
+  # go back to script 13 in agimpacts-precip if need plots
+)
+
+# contents of script 14 in agimpacts-precip.RProj
+
+targets_prediction_data_cmip <- list(
+  tar_target(time_periods,
+             c("2021-2040", "2041-2060", "2061-2080", "2081-2100")),
+  # get future precip projections from worldclim
+  tar_target(cmip6_pre_df,
+             create_cmip6_pre_df(time_periods)),
+  # get future tmp projections from worldclim
+  tar_target(cmip6_tmp_df,
+             create_cmip6_tmp_df(time_periods)),
+  # get cmip5 co2 data
+  tar_target(CO2_data,
+             get_CO2_data(
+               file="iRCP85_CO2_1860_2100.nc")),
+  # get baseline co2 data from 2015
+  tar_target(CO2_2015,
+             extract_CO2_2015(
+               data=CO2_data)),
+  tar_target(time_periods_years,
+             data.frame(start_year = c(2021, 2041, 2061, 2081), 
+                        end_year = c(2040, 2060, 2080, 2100))),
+  # calc change in global co2 since 2015 
+  tar_target(CO2_change,
+             create_CO2_change(
+               period=time_periods_years,
+               CO2_data=CO2_data,
+               CO2_2015=CO2_2015)),
+  # create mean annual temp change and pre change for each future time period
+  tar_target(change_vars,
+             create_change_vars(
+               cmip6_tmp_df=cmip6_tmp_df, 
+               cmip6_pre_df=cmip6_pre_df, 
+               tmp_mean_2015=tmp_mean_2015, 
+               pre_mean_2015=pre_mean_2015
+             )),
+  # create final prediction set
+  tar_target(prediction_data,
+             create_prediction_data(
+               bs_2015_vars=bs_2015_vars, 
+               change_vars=change_vars, 
+               CO2_change=CO2_change
+             ))
+  
+)
+
+
+

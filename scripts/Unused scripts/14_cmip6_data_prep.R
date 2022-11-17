@@ -191,6 +191,8 @@ prediction_data <- lapply(1:4, function(k){ # crops = k - highest level in three
         }, j, k) 
   }, k)}) 
 
+prediction_data <- readRDS(here("processed", "prediction_data.RData"))
+
 saveRDS(prediction_data, here("processed", "prediction_data.RData"))
 
 

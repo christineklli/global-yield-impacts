@@ -26,6 +26,6 @@ here()
 
 # INITIALISE PACKAGES ENVIRONMENT -----------------------------------------
 
-renv::init()
-
+#renv::init()
+renv::restore()
 renv::snapshot()
