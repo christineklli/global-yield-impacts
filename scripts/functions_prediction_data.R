@@ -410,3 +410,44 @@ create_prediction_data <- function(bs_2015_vars, change_vars, CO2_change){
   }, k)}) 
   
 }
+
+
+# clean
+clean_prediction_data <- function(data){
+  lapply(1:4, function(k){ # crops = k - highest level in three-level list; 1:4
+    lapply(1:4, function(j, k){ # time period = j; 1:4
+      lapply(1:24, function(i,j,k){
+  data[[k]][[j]][[i]] %>% 
+    filter(complete.cases(.)) 
+      }, j, k) 
+    }, k)}) 
+  
+}
+
+# store and write prediction data to local storage
+
+write_prediction_data <- function(data, outdir, crops, time_period, GCM) {# 
+  
+  paths <- sapply(1:4, function(k){
+    sapply(1:4, function(j){
+      sapply(1:24, function(i){
+        filename <-  sprintf("%s/prediction_data/%s/%s/%s.RData", 
+                             outdir, crops[k], time_period[j], GCM[i])
+        data.complete <- data[[k]][[j]][[i]] %>% filter(complete.cases(.)) 
+        
+        
+        # Create directory if it does not exists
+        if(!dir.exists(dirname(filename))) { 
+          dir.create(path = dirname(filename), recursive = TRUE)
+        }
+        
+        saveRDS(data.complete, filename)
+        filename
+      })
+    })
+  }) %>% unlist()
+  
+  
+  message("Prediction data complete")
+  paths
+}

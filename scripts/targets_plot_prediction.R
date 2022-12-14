@@ -5,7 +5,7 @@ tar_option_set(packages = packages,
                format = "qs" # efficient storage format, need to first install qs
 ) 
 
-targets_plot_predictions_gam <- list(
+targets_plot_predictions <- list(
   # some of these are really high, need to check against predictions_gridded
   tar_target(predictions_gridded_gam_raster, rasterise_predictions_gridded(
     predictions=predictions_gridded

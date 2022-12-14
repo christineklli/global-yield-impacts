@@ -175,7 +175,47 @@ targets_prediction_data_cmip <- list(
                bs_2015_vars=bs_2015_vars, 
                change_vars=change_vars, 
                CO2_change=CO2_change
-             ))
+             )),
+
+  # name GCMs
+  
+  tar_target(GCMs,
+             c("ACCESS-CM2","ACCESS-ESM1-5", 
+               "BCC-CSM2-MR", # this one is incorrect and will need to be excluded
+               "CanESM5",
+               "CanESM5-CanOE","CMCC-ESM2","CNRM-CM6-1","CNRM-CM6-1-HR", 
+               "CNRM-ESM2-1","EC-Earth3-Veg","EC-Earth3-Veg-LR",
+               "FIO-ESM-2-0","GISS-E2-1-G","GISS-E2-1-H",
+               "HadGEM3-GC31-LL","INM-CM4-8","INM-CM5-0","IPSL-CM6A-LR",
+               "MIROC-ES2L","MIROC6","MPI-ESM1-2-HR","MPI-ESM1-2-LR",
+               "MRI-ESM2-0","UKESM1-0-LL")),
+  
+
+  # clean prediction data for complete cases
+  # this results in ~63k rows per batch
+  tar_target(prediction_data_complete_cases,
+             clean_prediction_data(
+               data=prediction_data
+             )),
+  # skip above target and do this in same step as write out
+  tar_target(prediction_data_complete,
+             {sapply(GCMs, 
+                     function(x) {
+                       write_prediction_data(
+                                        data=prediction_data,
+                                        time_period = time_periods, 
+                                        GCM = x, 
+                                        crops = c("Maize", "Rice", "Soy", "Wheat"),
+                                        outdir = "processed")
+                     })
+               # Return list of files
+               list.files(path = "processed", 
+                          full.names = TRUE,
+                          recursive = TRUE,
+                          pattern = ".RData")
+             },
+             format = "file")
+  
   
 )
 

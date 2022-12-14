@@ -13,7 +13,8 @@ packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "gg
               "RNetCDF", "here", "rworldmap", "R.utils", "stringr", "compareDF", "utils",
               "ncdf4", "mice", "miceadds", "Rcpp", "VIM", "cvms", "groupdata2", "exactextractr",
               "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
-              "forestplot", "metafor", "itsadug", "renv", "targets", "stringr")
+              "forestplot", "metafor", "itsadug", "renv", "targets", "stringr", "parallelly",
+              "future")
 ipak(packages)
 
 
