@@ -196,25 +196,25 @@ targets_prediction_data_cmip <- list(
   tar_target(prediction_data_complete_cases,
              clean_prediction_data(
                data=prediction_data
-             )),
+             ))
   # skip above target and do this in same step as write out
-  tar_target(prediction_data_complete,
-             {sapply(GCMs, 
-                     function(x) {
-                       write_prediction_data(
-                                        data=prediction_data,
-                                        time_period = time_periods, 
-                                        GCM = x, 
-                                        crops = c("Maize", "Rice", "Soy", "Wheat"),
-                                        outdir = "processed")
-                     })
-               # Return list of files
-               list.files(path = "processed", 
-                          full.names = TRUE,
-                          recursive = TRUE,
-                          pattern = ".RData")
-             },
-             format = "file")
+  # tar_target(prediction_data_complete,
+  #            {sapply(GCMs, 
+  #                    function(x) {
+  #                      write_prediction_data(
+  #                                       data=prediction_data,
+  #                                       time_period = time_periods, 
+  #                                       GCM = x, 
+  #                                       crops = c("Maize", "Rice", "Soy", "Wheat"),
+  #                                       outdir = "processed")
+  #                    })
+  #              # Return list of files
+  #              list.files(path = "processed", 
+  #                         full.names = TRUE,
+  #                         recursive = TRUE,
+  #                         pattern = ".RData")
+  #            },
+  #            format = "file")
   
   
 )

@@ -112,7 +112,25 @@ targets_model_gam_glm <- list(
                  plots=pooled_fit_plot,
                  spec_no=5,
                  path="results/figures/pooled_fit_plot_lm.png"
+               )),
+    
+    
+    # rbindlist grouped_lines_df by model_spec
+    tar_target(grouped_lines_tbl,
+               rbindlist(grouped_lines_df, idcol="model_spec")),
+    
+    # plot all response functions on one plot
+    tar_target(all_response_function_plots,
+               plot_all_response_functions(
+                 predictions=grouped_lines_tbl,
+                 path="results/figures/all_response_function_plots.png"
+               )),
+    # plot with data
+    tar_target(all_response_functions_plots_with_data,
+               plot_all_response_functions_with_data(
+                 predictions=grouped_lines_tbl,
+                 data=AGIMPACTS_bs,
+                 path="results/figures/all_response_function_plots_with_data.png"
                ))
-
   
 )
