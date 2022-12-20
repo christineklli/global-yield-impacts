@@ -340,7 +340,10 @@ targets_prediction <- list(
                
              }
   ),
-  # calculate global mean predictions           
+  # calculate global mean predictions
+  # these predictions are not meaningful as they have not been adjusted for current crop spatial distribution
+  # for example, soybean global mean yields are vastly different across gam RS and glm RS
+  # these need to be recalculated with weightings (rasterise) and resaved to results/tables/ 
   tar_target(global_mean_predictions,
              {t <- predictions_by_time_period %>% 
                filter(!is.infinite(pred_bar)) %>% # for lm results

@@ -20,39 +20,39 @@ rasterise_predictions_gridded <- function(predictions, time_periods){ # predicti
       
       raster::stack(x_list)
       
-      })
-      
-      # these don't span entire globe? ymin -55 only not -90!!?
-      # terra::rast(r_2021_2040, "xyz") throws an error
-      #https://future.futureverse.org/articles/future-4-non-exportable-objects.html#packages-that-rely-on-external-pointers
-    }) 
+    })
+    
+    # these don't span entire globe? ymin -55 only not -90!!?
+    # terra::rast(r_2021_2040, "xyz") throws an error
+    #https://future.futureverse.org/articles/future-4-non-exportable-objects.html#packages-that-rely-on-external-pointers
+  }) 
   
   
 }
 
 
-plot_predictions_gridded <- function(predictions, returnStack, World){
+plot_predictions_gridded <- function(predictions, returnStack, World, model_spec_alphabetical, crops, path){
   lapply(1:5, function(model){
     lapply(1:4, function(crop){
-    
+      
       tmap::tmap_mode("plot")
       
       
       plot <- tmap::tm_shape(predictions[[model]][[crop]]) + 
         tmap::tm_raster("pred_bar", title="Pooled fit (%)",
-                  style = "cont",
-                  breaks=seq(-100,100,10), 
-                  # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-                  # remove range restriction when we remove outliers in the prediction data
-                  palette = rev(terrain.colors(100))) +
+                        style = "cont",
+                        breaks=seq(-100,100,10), 
+                        # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
+                        # remove range restriction when we remove outliers in the prediction data
+                        palette = rev(terrain.colors(100))) +
         tmap::tm_shape(World) +
         tmap::tm_borders("grey", lwd =1) + 
         tmap::tm_layout(panel.labels = c('2021-2040', '2041-2060', '2061-2080', '2081-2100'))
- 
+      
       # define filename
-      outfile <- sprintf("results/figures/predictions_gridded/predictions_gridded_%s_%s.png", 
-                         paste0("model_", model),
-                         paste0("crop_", crop))
+      outfile <- sprintf(path, 
+                         model_spec_alphabetical[[model]],
+                         crops[[crop]])
       
       # save
       tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
@@ -82,7 +82,7 @@ create_crop_production_raster_agg <- function(crop_production_rasters){
 }
 
 
-create_country_predictions_tbl <- function(predictions, crop_production_raster_agg, worldmap_clean){
+create_country_predictions_tbl <- function(predictions, crop_production_raster_agg, worldmap_clean, model_spec_alphabetical, crops, path){
   lapply(1:5, function(model){ #
     lapply(1:4, function(crop){ # time period
       
@@ -91,9 +91,15 @@ create_country_predictions_tbl <- function(predictions, crop_production_raster_a
                                                  'weighted_mean', 
                                                  weights = crop_production_raster_agg[[crop]]) 
       
-      data.frame(ADMIN=worldmap_clean@data$ADMIN,
-                 ISO_A2=worldmap_clean@data$ISO_A2,
-                 prediction)
+      tbl <- data.frame(ADMIN=worldmap_clean@data$ADMIN,
+                        ISO_A2=worldmap_clean@data$ISO_A2,
+                        prediction)
+      
+      tbl %>% readr::write_csv(sprintf(path, 
+                                       model_spec_alphabetical[[model]],
+                                       crops[[crop]]))
+      
+      tbl
       
     }) 
   }) 
@@ -102,7 +108,7 @@ create_country_predictions_tbl <- function(predictions, crop_production_raster_a
 # create rasters of the country weighted average
 # then plot and save
 
-plot_country_predictions <- function(predictions, worldmap_clean, crop_production_raster_agg, World, returnStack){
+plot_country_predictions <- function(predictions, worldmap_clean, crop_production_raster_agg, World, returnStack, model_spec_alphabetical, crops, path){
   lapply(1:5, function(model){ #
     lapply(1:4, function(crop){ # time period
       
@@ -137,9 +143,9 @@ plot_country_predictions <- function(predictions, worldmap_clean, crop_productio
         tmap::tm_layout(panel.labels = c('2021-2040', '2041-2060', '2061-2080', '2081-2100'))
       
       # define filename
-      outfile <- sprintf("results/figures/predictions_country_weighted/predictions_country_weighted_%s_%s.png", 
-                         paste0("model_", model),
-                         paste0("crop_", crop))
+      outfile <- sprintf(path, 
+                         model_spec_alphabetical[[model]],
+                         crops[[crop]])
       
       # save
       tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
@@ -154,3 +160,103 @@ plot_country_predictions <- function(predictions, worldmap_clean, crop_productio
     }) 
   }) 
 }
+
+
+# plot equimap with dots for spatial crop production distribution
+
+plot_crop_production_dots <- function(x){
+  
+  
+  
+}
+
+# 
+# tmap::tmap_mode("plot")
+# 
+# 
+# crop_points <- raster::rasterToPoints(
+#   tar_read(crop_production_raster_agg)[[1]]
+# ) %>% 
+#   as.data.frame() %>% 
+#   filter(.[[3]]!=0) # third column
+# 
+# crop_sf <- st_as_sf(crop_points, coords=c("x","y"), 
+#                     crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+# 
+# plot <- tmap::tm_shape(tar_read(predictions_gridded_raster)[[1]][[1]][[1]]) + 
+#   tmap::tm_raster("X2021.2040", title="Pooled fit (%)",
+#                   style = "cont",
+#                   breaks=seq(-100,100,10), 
+#                   # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
+#                   # remove range restriction when we remove outliers in the prediction data
+#                   palette = rev(terrain.colors(100))) +
+#   tmap::tm_shape(crop_sf) +
+#   tmap::tm_dots(size=0.00001,shape=1) + # open circle shape
+#   tmap::tm_shape(tar_read(World)) +
+#   tmap::tm_borders("grey", lwd =1) + 
+#   tmap::tm_layout(panel.labels = c('2021-2040', '2041-2060', '2061-2080', '2081-2100')) 
+
+
+create_crop_production_sf <- function(raster){
+  lapply(1:4, function(crop){
+    points <- raster::rasterToPoints(
+      raster[[crop]]
+    ) %>% 
+      as.data.frame() %>% 
+      filter(.[[3]]!=0) # third column/production volume
+    
+    st_as_sf(points, coords=c("x","y"), 
+             crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+    
+  })
+}
+
+plot_with_dots <- function(predictions, crop_sf, time_periods, model_spec_alphabetical, crops, path, returnStack, World){
+  lapply(1:5, function(model){
+    lapply(1:4, function(crop){
+      
+      columns <- c("X2021.2040", "X2041.2060", "X2061.2080", "X2081.2100")
+      
+      plot_list <- lapply(1:4, function(i){ # time period recursively
+        tmap::tm_shape(predictions[[model]][[crop]][[i]]) + 
+          tmap::tm_raster(columns[[i]], title="Pooled fit (%)",
+                          style = "cont",
+                          breaks=seq(-100,100,10), 
+                          # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
+                          # remove range restriction when we remove outliers in the prediction data
+                          palette = rev(terrain.colors(100))) +
+          tmap::tm_shape(crop_sf[[crop]]) +
+          tmap::tm_dots(size=0.00000001,shape=1, alpha=0.05) + # open circle shape
+          tmap::tm_shape(World) +
+          tmap::tm_borders("grey", lwd =1) + 
+          tmap::tm_layout(panel.labels = c(time_periods[[i]])) 
+        
+        
+      })
+      
+      # library(patchwork)
+      # plot <- (plot_list[[1]] + plot_list[[2]])/(plot_list[[3]] + plot_list[[4]])
+      # 
+      # define filename
+      outfile <- sprintf(path, 
+                         model_spec_alphabetical[[model]],
+                         crops[[crop]])
+      
+      plot <- tmap::tmap_arrange(plot_list[[1]],
+                        plot_list[[2]],
+                        plot_list[[3]],
+                        plot_list[[4]],
+                        nrow=2, ncol=2)
+      
+      tmap::tmap_save(plot, filename=outfile)
+      
+      # show predictions again
+      if(isTRUE(returnStack)) {
+        plot
+      } else {
+        outfile
+      }
+      
+    })
+  })
+} 

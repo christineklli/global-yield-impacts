@@ -23,12 +23,19 @@ targets_plot_predictions <- list(
              # https://jakubnowosad.com/spData/reference/world.html
              st_read(system.file("shapes/world.gpkg", package="spData"))
   ), 
+  tar_target(model_spec_alphabetical, c(
+    "gamRI", "gamRS", "glmRI", "glmRS", "lm"
+  )
+             ),
   # plot and save
   tar_target(predictions_gridded_plot,
              plot_predictions_gridded(
                predictions=predictions_gridded_raster,
                returnStack=TRUE,
-               World=World
+               World=World,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/figures/unadjusted_predictions_gridded/unadjusted_predictions_gridded_%s_%s.png"
              )),
   
   # plot country weighted predictions, also 20 plots with 4 time periods in each plot
@@ -41,7 +48,10 @@ targets_plot_predictions <- list(
              create_country_predictions_tbl(
                predictions=predictions_gridded_raster,
                crop_production_raster_agg=crop_production_raster_agg,
-               worldmap_clean=worldmap_clean
+               worldmap_clean=worldmap_clean,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/tables/unadjusted/unadjusted_country_weighted_predictions_%s_%s.csv"
                )
   ),
   tar_target(predictions_country_plot,
@@ -50,9 +60,78 @@ targets_plot_predictions <- list(
                worldmap_clean=worldmap_clean,
                crop_production_raster_agg=crop_production_raster_agg,
                returnStack=TRUE,
-               World=World
+               World=World,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/figures/unadjusted_predictions_country_weighted/unadjusted_predictions_country_weighted_%s_%s.png"
              )
-  )
+  ),
+  
+  # REPEAT FOR ADJUSTED (BY INTERCEPT)
+  
+  # plot gridded predictions
+  tar_target(adj_predictions_gridded_raster, # list of 20 rasters
+             rasterise_predictions_gridded(
+               predictions=adj_predictions_nested,
+               time_periods=time_periods
+             )),
+  tar_target(adj_predictions_gridded_plot,
+             plot_predictions_gridded(
+               predictions=adj_predictions_gridded_raster,
+               returnStack=TRUE,
+               World=World,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/figures/adjusted_predictions_gridded/adjusted_predictions_gridded_%s_%s.png"
+             )),
+  
+  # calculate country weighted predictions and write as csv
+  tar_target(adj_country_predictions_tbl, # list of 4 crop tbls with 4 columns for time period weighted mean              create_country_predictions_tbl(
+             create_country_predictions_tbl(
+               predictions=adj_predictions_gridded_raster,
+               crop_production_raster_agg=crop_production_raster_agg,
+               worldmap_clean=worldmap_clean,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/tables/adjusted/adjusted_country_weighted_predictions_%s_%s.csv"
+             )
+  ),
+  
+  # plot country weighted predictions
+  tar_target(adj_predictions_country_plot,
+             plot_country_predictions(
+               predictions=adj_predictions_gridded_raster,
+               worldmap_clean=worldmap_clean,
+               crop_production_raster_agg=crop_production_raster_agg,
+               returnStack=TRUE,
+               World=World,
+               model_spec_alphabetical=model_spec_alphabetical,
+               crops=crops,
+               path="results/figures/adjusted_predictions_country_weighted/adjusted_predictions_country_weighted_%s_%s.png"
+             )
+  ),
+  
+  # calculate global weighted predictions and write as csvs
+  # instead of weighted country -> global
+  # need to exactextractr to global from pixel
+  
+  
+  # plot adjusted gridded predictions with dots showing spatial distribution of crop production
+  tar_target(crop_sf,
+             create_crop_production_sf(
+               raster=crop_production_raster_agg
+             )),
+  tar_target(adj_predictions_gridded_plot_dots,
+             plot_with_dots(
+               predictions=adj_predictions_gridded_raster, 
+               crop_sf=crop_sf, 
+               model_spec_alphabetical=model_spec_alphabetical, 
+               crops=crops, 
+               path="results/figures/adjusted_predictions_gridded/adjusted_predictions_gridded_dots_%s_%s.png", 
+               returnStack=TRUE,
+               World=World,
+               time_periods=time_periods
+             ))
 )
 
 

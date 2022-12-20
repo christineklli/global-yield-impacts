@@ -584,7 +584,7 @@ plot_all_response_functions <- function(predictions, path){
   plot <- ggplot() +
     geom_line(data = predictions[x>=0 & x<=5,],
               aes(x=x, y = fit_bar, colour = model_spec), 
-              size=1) +
+              linewidth=1) +
     geom_ribbon(data = predictions[x>=0 & x<=5,],
                 aes(x=x, ymin = lwr_p, ymax = upr_p,
                     fill = model_spec),
@@ -637,7 +637,7 @@ plot_all_response_functions_with_data <- function(predictions, data, path){
   plot <- ggplot() +
     geom_line(data = predictions[x>=0 & x<=5,],
               aes(x=x, y = fit_bar, colour = model_spec), 
-              size=1) +
+              linewidth=1) +
     geom_ribbon(data = predictions[x>=0 & x<=5,],
                 aes(x=x, ymin = lwr_p, ymax = upr_p,
                     fill = model_spec),
@@ -673,3 +673,4 @@ plot_all_response_functions_with_data <- function(predictions, data, path){
   
   
 }
+
