@@ -196,6 +196,11 @@ targets_prediction <- list(
   #^ we choose the above as if we nested only over imputation then would still need to rbindlist over entire crop predict target of 27m rows later and memory may not be sufficient 
   # each branch has unique (just one) time period and model_spec but all combinations of m and gcm
   
+  # 20 branches because fit_maize_nested is a list of 5 model specs (rbindlist predictions across 5 m fit)
+  # and data_future_maize_nested is list of 4 time periods (with rbindlist of unique gcms)
+  # so crossing both lists returns mega rbindlisted list of predictions with all combos
+  
+  
   ## MAIZE ##
   tar_target(prediction_level_5_maize, # 20 branches x 7m rows (5 imputation x 23 gcm x 60k rows)
              predict_level_5(

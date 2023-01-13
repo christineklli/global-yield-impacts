@@ -81,7 +81,7 @@ create_crop_production_raster_agg <- function(crop_production_rasters){
   })
 }
 
-
+# may need to recalculate this with area-weighting!
 create_country_predictions_tbl <- function(predictions, crop_production_raster_agg, worldmap_clean, model_spec_alphabetical, crops, path){
   lapply(1:5, function(model){ #
     lapply(1:4, function(crop){ # time period
@@ -108,7 +108,10 @@ create_country_predictions_tbl <- function(predictions, crop_production_raster_a
 # create rasters of the country weighted average
 # then plot and save
 
-plot_country_predictions <- function(predictions, worldmap_clean, crop_production_raster_agg, World, returnStack, model_spec_alphabetical, crops, path){
+plot_country_predictions <- function(predictions, worldmap_clean, 
+                                     crop_production_raster_agg, 
+                                     World, returnStack, model_spec_alphabetical, 
+                                     crops, path){
   lapply(1:5, function(model){ #
     lapply(1:4, function(crop){ # time period
       
@@ -162,41 +165,6 @@ plot_country_predictions <- function(predictions, worldmap_clean, crop_productio
 }
 
 
-# plot equimap with dots for spatial crop production distribution
-
-plot_crop_production_dots <- function(x){
-  
-  
-  
-}
-
-# 
-# tmap::tmap_mode("plot")
-# 
-# 
-# crop_points <- raster::rasterToPoints(
-#   tar_read(crop_production_raster_agg)[[1]]
-# ) %>% 
-#   as.data.frame() %>% 
-#   filter(.[[3]]!=0) # third column
-# 
-# crop_sf <- st_as_sf(crop_points, coords=c("x","y"), 
-#                     crs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
-# 
-# plot <- tmap::tm_shape(tar_read(predictions_gridded_raster)[[1]][[1]][[1]]) + 
-#   tmap::tm_raster("X2021.2040", title="Pooled fit (%)",
-#                   style = "cont",
-#                   breaks=seq(-100,100,10), 
-#                   # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-#                   # remove range restriction when we remove outliers in the prediction data
-#                   palette = rev(terrain.colors(100))) +
-#   tmap::tm_shape(crop_sf) +
-#   tmap::tm_dots(size=0.00001,shape=1) + # open circle shape
-#   tmap::tm_shape(tar_read(World)) +
-#   tmap::tm_borders("grey", lwd =1) + 
-#   tmap::tm_layout(panel.labels = c('2021-2040', '2041-2060', '2061-2080', '2081-2100')) 
-
-
 create_crop_production_sf <- function(raster){
   lapply(1:4, function(crop){
     points <- raster::rasterToPoints(
@@ -211,7 +179,9 @@ create_crop_production_sf <- function(raster){
   })
 }
 
-plot_with_dots <- function(predictions, crop_sf, time_periods, model_spec_alphabetical, crops, path, returnStack, World){
+plot_with_dots <- function(predictions, crop_sf, time_periods, 
+                           model_spec_alphabetical, crops, 
+                           path, returnStack, World){
   lapply(1:5, function(model){
     lapply(1:4, function(crop){
       
@@ -234,10 +204,6 @@ plot_with_dots <- function(predictions, crop_sf, time_periods, model_spec_alphab
         
       })
       
-      # library(patchwork)
-      # plot <- (plot_list[[1]] + plot_list[[2]])/(plot_list[[3]] + plot_list[[4]])
-      # 
-      # define filename
       outfile <- sprintf(path, 
                          model_spec_alphabetical[[model]],
                          crops[[crop]])

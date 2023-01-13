@@ -40,17 +40,17 @@ list(
   ),
 )
 
-
-# run predictions and save in directories
-tar_target(crops, paste('crop', 1:5, '_')),
-tar_target(time_periods, paste('time', 1:4, '_')),
-tar_target(gcms, paste('gcm', 1:4, '_')),
-tar_target(prediction_data, 
-           # expression/function to create pred data
-           dplyr::tibble(crop=crops, time_period=time_period, ) # this only builds the current iteration
-           pattern=cross(crops, time_periods, gcms), iteration='list',
-           format='fst_tbl'
-          )
+# 
+# # run predictions and save in directories
+# tar_target(crops, paste('crop', 1:5, '_')),
+# tar_target(time_periods, paste('time', 1:4, '_')),
+# tar_target(gcms, paste('gcm', 1:4, '_')),
+# tar_target(prediction_data, 
+#            # expression/function to create pred data
+#            dplyr::tibble(crop=crops, time_period=time_period, ) # this only builds the current iteration
+#            pattern=cross(crops, time_periods, gcms), iteration='list',
+#            format='fst_tbl'
+#           )
 
 
 # possible way of doing this in a neater way without nested sapplys

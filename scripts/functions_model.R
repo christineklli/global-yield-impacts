@@ -373,24 +373,6 @@ new_data <- function(data){
 }
 
 
-#fit_lines <- function(fit, data){
-
-# since we do not provide the newdata argument, 
-# the model is fit on original data
-# so we can append this to the fitted values
-#  tibble(.imp=1:5) %>% 
-#    mutate(p=purrr::map(.imp, ~ predict(fit$analyses[[.]],
-#newdata = data,  
-#newdata.guaranteed = TRUE,
-#                                 se.fit = TRUE) %>% 
-#                   data.frame())) %>% 
-#    unnest(p) %>% 
-# add in the nd predictor data
-#    bind_cols(
-#      bind_rows(replicate(5, data, simplify = FALSE))
-#    )
-#}
-
 fit_lines <- function(fit, data){
   
   lapply(1:5, function(k){
@@ -423,32 +405,6 @@ fit_lines <- function(fit, data){
 }
 
 
-
-
-
-# however, not sure how to capture partial dependence/conditional terms
-# working this out
-
-#group_fitted_lines <- function(fitted_lines){
-
-#  m <- 5
-
-#  fitted_lines %>% 
-#    group_by(Temp.Change, Precipitation.change, f_CO2) %>% 
-# filter for certain conditional terms i.e. baseline temp and baseline precip?
-#    filter(Baseline_tmp == median(Baseline_tmp),
-#           Baseline_pre == median(Baseline_pre)) %>% 
-# there's also C3, C4 etc?
-#  summarise(fit_bar = mean(fit),
-#            v_w     = mean(se.fit^2),
-#            v_b     = sum((fit - fit_bar)^2) / (m - 1),
-#            v_p     = v_w + v_b * (1 + (1 / m)),
-#            se_p    = sqrt(v_p)) %>% 
-# use the _p suffix to indicate these are pooled
-#  mutate(lwr_p = fit_bar - se_p * 1.96,
-#         upr_p = fit_bar + se_p * 1.96) 
-
-#}
 
 group_fitted_lines <- function(fitted_lines){
   
@@ -673,4 +629,57 @@ plot_all_response_functions_with_data <- function(predictions, data, path){
   
   
 }
+
+
+plot_all_response_functions_with_lit <- function(data, predictions, path){
+  
+  # make sure this is discrete scale
+  predictions$model_spec <- as.factor(predictions$model_spec)
+  # crop facet labels
+  crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
+  names(crop_labs) <- c("1","2","3","4")
+  
+ 
+  plot <- ggplot() +
+    geom_line(data = predictions[x>=0 & x<=5,],
+              aes(x=x, y = fit_bar, colour = model_spec), 
+              linewidth=1) +
+    geom_ribbon(data = predictions[x>=0 & x<=5,],
+                aes(x=x, ymin = lwr_p, ymax = upr_p,
+                    fill = model_spec),
+                alpha = 0.1) +
+    theme_bw() +
+    #theme(legend.position="none") +
+    labs(x="Temperature Change (°C)",
+         y="Fitted Yield Change (%)") +
+    scale_colour_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    scale_fill_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    # add literature diamonds
+    geom_point(data = data,
+               aes(x = x, y = fit_bar, col = Study),
+               shape=18, size=3, alpha=0.7 # change to colour by Study and add text labels for Study
+    ) +
+    facet_wrap(facets=vars(crop),
+               labeller=labeller(crop=crop_labs)) +
+  ggrepel::geom_text_repel(data=data, aes(x=x, y=fit_bar, label=Study, col=Study), 
+            size = 3)
+  
+  ggplot2::ggsave(filename=path,
+                  plot=plot,
+                  width=7, height=6)
+  
+  plot
+  
+  
+  
+}
+
 

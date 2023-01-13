@@ -1,5 +1,5 @@
 
-packages <- c("rlang", "mice")
+packages <- c("rlang", "mice", "dplyr")
 
 
 tar_option_set(packages = packages,
@@ -146,9 +146,15 @@ targets_model_gam_glm <- list(
                  
                  grouped_lines_df[[model]] %>% 
                    left_join(fit_zero, by=c("crop")) %>% 
-                   mutate(fit_bar_adj=fit_bar-fit_bar_zero) %>% 
-                   dplyr::select(!fit_bar) %>% 
-                   rename(fit_bar=fit_bar_adj) # rename so that we can use the same plot function
+                   mutate(fit_bar_adj=fit_bar-fit_bar_zero,
+                          lwr_p_adj=lwr_p-fit_bar_zero,
+                          upr_p_adj=upr_p-fit_bar_zero) %>% 
+                   dplyr::select(!c("fit_bar", "lwr_p", "upr_p")) %>% 
+                   rename(fit_bar=fit_bar_adj,
+                          lwr_p=lwr_p_adj,
+                          upr_p=upr_p_adj) # rename so that we can use the same plot function
+                 
+                 # adjust confidence intervals
                  
                })
                
@@ -171,9 +177,23 @@ targets_model_gam_glm <- list(
                "Fischer et al. 2014", NA, NA, NA, -5.9,
                "Wang et al. 2020", -7.1, -5.6, -10.6, -2.9)
              
-             lit %>% 
-               pivot_longer(!Study, names_to="crop", values_to="fit_bar")
+             lit <- lit %>% 
+               tidyr::pivot_longer(!Study, names_to="crop_name", values_to="fit_bar")
              
-             })
+             crops_concord <- data.frame(crop_name=crops,
+                                         crop=seq(1,4,1)) 
+             
+             lit %>% 
+               left_join(crops_concord, by=c("crop_name")) %>% 
+               mutate(x=1)
+             
+             }),
+  # and then plot as red diamonds with text labels, faceted by crop
+  tar_target(adj_all_response_functions_plots_with_lit,
+             plot_all_response_functions_with_lit(
+               data=lit_responses_1k,
+               predictions=adj_grouped_lines_tbl,
+               path="results/figures/adj_all_response_function_plots_with_lit.png"
+             ))
   
 )

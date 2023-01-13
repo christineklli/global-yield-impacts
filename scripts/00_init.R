@@ -15,7 +15,7 @@ packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "gg
               "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
               "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
               "readr", "terra", "qs", "rlang", "future", "purrr", "parallelly", "fst", "tmap",
-               "cowplot", "ggpubr")
+               "cowplot", "ggpubr", "rsample", "furrr", "gammit")
 ipak(packages)
 
 

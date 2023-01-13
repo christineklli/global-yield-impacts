@@ -224,6 +224,16 @@ tar_target(adj_predictions_nested,
              
            }
            
-)
+),
+# calculate global production weighted predictions
+tar_target(adj_predictions_global_wt_mean,
+           create_global_predictions_tbl(
+             predictions=adj_predictions_gridded_raster,
+             crop_production_raster_agg=crop_production_raster_agg,
+             worldmap_clean=worldmap_clean,
+             model_spec_alphabetical=model_spec_alphabetical,
+             crops=crops,
+             path="results/tables/adjusted/adjusted_global_weighted_predictions.csv"
+           ))
 
 )

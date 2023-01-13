@@ -43,21 +43,21 @@ create_int_adj_prediction_data <- function(prediction_data, time_periods, GCMs){
     # split by timeperiod so that we have 4 nested lists of 4 each (i.e. 16 lists)
     split(df_b, df_b$time_period)
   })
-    l_nested
-    
+  l_nested
+  
 }
 
 
 adjust_prediction_level_5 <- function(prediction_og, prediction_adj){
   prediction_og %>% 
-      left_join(
-        prediction_adj, by=c(
-          "lon","lat", "crop_pooled", "time_period","gcm","model_spec","m", 
-          "Baseline_tmp", "Baseline_pre", "Baseline_yield", "C3", "C4", "adapt_dummy", "Country2_fact")
-        # there will be duplicated variables for Temp.Change; Precipitation.change, f_CO2 as intended
-      ) %>% 
-      mutate(prediction.fit=prediction.fit.x-prediction.fit.y)
-    #^ same prediction.fit so as to be able to use pooling functions as they are
+    left_join(
+      prediction_adj, by=c(
+        "lon","lat", "crop_pooled", "time_period","gcm","model_spec","m", 
+        "Baseline_tmp", "Baseline_pre", "Baseline_yield", "C3", "C4", "adapt_dummy", "Country2_fact")
+      # there will be duplicated variables for Temp.Change; Precipitation.change, f_CO2 as intended
+    ) %>% 
+    mutate(prediction.fit=prediction.fit.x-prediction.fit.y)
+  #^ same prediction.fit so as to be able to use pooling functions as they are
 }
 
 
@@ -77,4 +77,49 @@ pool_across_m_int_adj <- function(predictions){
     # use the p_suffix to indicate these are pooled
     mutate(lwr_p = fit_bar - se_p * 1.96, # assuming normally distributed imputations
            upr_p = fit_bar + se_p * 1.96)
+}
+
+create_global_predictions_tbl <- function(predictions, 
+                                          crop_production_raster_agg, 
+                                          worldmap_clean, 
+                                          model_spec_alphabetical, 
+                                          crops, 
+                                          path){
+  df <- lapply(1:5, function(model){ #
+    lapply(1:4, function(crop){ # time period
+      
+      prediction <- exactextractr::exact_extract(predictions[[model]][[crop]], # this is a stack
+                                                 worldmap_clean, 
+                                                 'weighted_mean', 
+                                                 weights = crop_production_raster_agg[[crop]]) 
+      
+      # calculate area of each country
+      
+      worldmap_clean@data$area_sqkm <- raster::area(worldmap_clean)/1000000
+      
+      tbl <- data.frame(ADMIN=worldmap_clean@data$ADMIN,
+                        ISO_A2=worldmap_clean@data$ISO_A2,
+                        area_sqkm=worldmap_clean@data$area_sqkm,
+                        prediction)
+      
+      # calculate global area-weighted mean prediction
+      
+      tbl %>% 
+        summarise(
+        wt.mean.2021.2040 = weighted.mean(weighted_mean.X2021.2040, area_sqkm, na.rm=T),
+        wt.mean.2041.2060 = weighted.mean(weighted_mean.X2041.2060, area_sqkm, na.rm=T),
+        wt.mean.2061.2080 = weighted.mean(weighted_mean.X2061.2080, area_sqkm, na.rm=T),
+        wt.mean.2081.2100 = weighted.mean(weighted_mean.X2081.2100, area_sqkm, na.rm=T),
+        model = model_spec_alphabetical[[model]],
+        crop_name = crops[[crop]]
+      ) 
+      
+    }) 
+  }) 
+  
+  lapply(1:5, function(model){
+    rbindlist(df[[model]])
+    }) %>% 
+    rbindlist() %>% 
+    readr::write_csv(sprintf(path))
 }
