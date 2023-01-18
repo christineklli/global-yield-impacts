@@ -195,67 +195,230 @@ fit_block_bootstrap <- function(block_bootstrap_samples_unnested,
   
 }
 
+options(dplyr.summarise.inform = FALSE)
+
+## EDIT THIS FUNCTION LATER AND RERUN
+
 predict_block_bootstrap <- function(fit,
                                     data_og,
-                                    data_adj
-                                    #ncores
-                                    # then add data_adj
-){
-  #future::plan(future::multisession, workers = ncores)
+                                    data_adj,
+                                    crop_production_df){
   
   fit %>% 
     mutate(
       predict_og = purrr::map(model, ~{
         gammit::predict_gamm(
           .x, # model 
-          data_og, 
+          data_og[[1]], 
           re_form = c("s(Country2_fact)"),
           keep_prediction_data = FALSE,
           newdata.guaranteed = TRUE,
-          se.fit = FALSE) 
-      }),
+          se.fit = FALSE)}),
+      
       predict_adj = purrr::map(model, ~{
         gammit::predict_gamm(
           .x,
-          data_adj,
+          data_adj[[1]],
           re_form = c("s(Country2_fact)"),
           keep_prediction_data = FALSE,
           newdata.guaranteed = TRUE,
-          se.fit = FALSE)
+          se.fit = FALSE) %>% 
+          cbind(lon=data_adj[[1]]$lon, 
+                lat=data_adj[[1]]$lat, 
+                gcm=data_adj[[1]]$gcm)
         
-      })) %>% 
-    dplyr::select(!c(model)) %>% 
-     unnest(c(predict_og, predict_adj), names_repair="unique") %>% # prediction duplicate 
-    mutate(predict = .[[5]]-.[[6]]) %>% 
-    dplyr::select(!c("prediction...5", "prediction...6"))
+      })) %>%
+    dplyr::select(!c(model)) %>%
+    unnest(c(predict_og, predict_adj), 
+           names_repair="unique_quiet") %>% # prediction duplicate
+    mutate(predict = .[[5]]-.[[6]]) %>%
+    dplyr::select(!c("prediction...5", "prediction...6")) %>%
+    left_join(crop_production_df[[1]], by=c("lon"="x","lat"="y")) %>%
+    group_by(id, model_spec, crop, imputation, gcm) %>%
+    summarise(weighted_mean=weighted.mean(predict, production, na.rm=TRUE))
+  
   
 }
-# 
-# fit <- tar_read(block_bootstrap_fit_only_15124995)
-# fit <- fit %>% head(., 2)
-# 
-# predict <- predict_block_bootstrap(
-#   fit=fit,
-#   data_og=tar_read(data_future_maize_nested)[[4]], # only predict on 2081-2100 data
-#   data_adj=tar_read(int_adj_future_maize)[[4]]
-# )
 
-# from here we can add predict_zero in the same mutate
-# and then deselect model
-# and then mutate predict_adj by subtracting predict_zero from predict_og
-# and then left join each bootstrap id prediction tibble with crop production data
-# then do summarise weighted mean
-# also weight by area
-# left join; worldmap_clean@data$area_sqkm <- raster::area(worldmap_clean)/1000000
-#data.frame(ADMIN=worldmap_clean@data$ADMIN,
-#           ISO_A2=worldmap_clean@data$ISO_A2,
-#           area_sqkm=worldmap_clean@data$area_sqkm
-# then we would be left with 100 bootstrap id rows x 23 gcm weighted means per 25 batches per 4 crops
-# so each batch would only have 2300 rows; tiny!
-# then rbind them all together so that we have a df of predictions with 2300 x 25 x 4 = 230,000 rows
+predict_block_bootstrap_rice <- function(fit,
+                                         data_og,
+                                         data_adj,
+                                         crop_production_df){
+  
+  fit %>% 
+    mutate(
+      predict_og = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x, # model 
+          data_og[[1]], 
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE)}),
+      
+      predict_adj = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x,
+          data_adj[[1]],
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE) %>% 
+          cbind(lon=data_adj[[1]]$lon, 
+                lat=data_adj[[1]]$lat, 
+                gcm=data_adj[[1]]$gcm)
+        
+      })) %>%
+    dplyr::select(!c(model)) %>%
+    unnest(c(predict_og, predict_adj), 
+           names_repair="unique_quiet") %>% # prediction duplicate
+    mutate(predict = .[[5]]-.[[6]]) %>%
+    dplyr::select(!c("prediction...5", "prediction...6")) %>%
+    left_join(crop_production_df[[2]], by=c("lon"="x","lat"="y")) %>%
+    group_by(id, model_spec, crop, imputation, gcm) %>%
+    summarise(weighted_mean=weighted.mean(predict, production, na.rm=TRUE))
+  
+  
+}
+
+predict_block_bootstrap_soy <- function(fit,
+                                        data_og,
+                                        data_adj,
+                                        crop_production_df){
+  
+  fit %>% 
+    mutate(
+      predict_og = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x, # model 
+          data_og[[1]], 
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE)}),
+      
+      predict_adj = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x,
+          data_adj[[1]],
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE) %>% 
+          cbind(lon=data_adj[[1]]$lon, 
+                lat=data_adj[[1]]$lat, 
+                gcm=data_adj[[1]]$gcm)
+        
+      })) %>%
+    dplyr::select(!c(model)) %>%
+    unnest(c(predict_og, predict_adj), 
+           names_repair="unique_quiet") %>% # prediction duplicate
+    mutate(predict = .[[5]]-.[[6]]) %>%
+    dplyr::select(!c("prediction...5", "prediction...6")) %>%
+    left_join(crop_production_df[[3]], by=c("lon"="x","lat"="y")) %>%
+    group_by(id, model_spec, crop, imputation, gcm) %>%
+    summarise(weighted_mean=weighted.mean(predict, production, na.rm=TRUE))
+  
+  
+}
+
+predict_block_bootstrap_wheat <- function(fit,
+                                          data_og,
+                                          data_adj,
+                                          crop_production_df){
+  
+  fit %>% 
+    mutate(
+      predict_og = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x, # model 
+          data_og[[1]], 
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE)}),
+      
+      predict_adj = purrr::map(model, ~{
+        gammit::predict_gamm(
+          .x,
+          data_adj[[1]],
+          re_form = c("s(Country2_fact)"),
+          keep_prediction_data = FALSE,
+          newdata.guaranteed = TRUE,
+          se.fit = FALSE) %>% 
+          cbind(lon=data_adj[[1]]$lon, 
+                lat=data_adj[[1]]$lat, 
+                gcm=data_adj[[1]]$gcm)
+        
+      })) %>%
+    dplyr::select(!c(model)) %>%
+    unnest(c(predict_og, predict_adj), 
+           names_repair="unique_quiet") %>% # prediction duplicate
+    mutate(predict = .[[5]]-.[[6]]) %>%
+    dplyr::select(!c("prediction...5", "prediction...6")) %>%
+    left_join(crop_production_df[[4]], by=c("lon"="x","lat"="y")) %>%
+    group_by(id, model_spec, crop, imputation, gcm) %>%
+    summarise(weighted_mean=weighted.mean(predict, production, na.rm=TRUE))
+  
+  
+}
+
+rbind_block_bootstrap_predictions <- function(block_bootstrap_prediction_maize,
+                                              block_bootstrap_prediction_rice,
+                                              block_bootstrap_prediction_soy,
+                                              block_bootstrap_prediction_wheat){
+  maize <- data.table::rbindlist(block_bootstrap_prediction_maize)
+  rice <- data.table::rbindlist(block_bootstrap_prediction_rice)
+  soy <- data.table::rbindlist(block_bootstrap_prediction_soy)
+  wheat <- data.table::rbindlist(block_bootstrap_prediction_wheat) 
+  
+  rbind(maize,rice,soy,wheat) %>% 
+    filter(!is.infinite(weighted_mean))
+}
 
 
-# then group_by() for distributions
-# plot another function
-# calculate modelling & sampling uncertainty in another function
+# plot distributions
 
+plot_bootstrap_distributions <- function(predictions, path){
+  
+ 
+    plot <- predictions %>% 
+      group_by(model_spec,
+               imputation, 
+               gcm,
+               crop) %>% 
+        ggplot( 
+          aes(x=weighted_mean, 
+              group=c(model_spec, imputation, gcm, crop))) +
+        geom_density(alpha=0.4) +
+        theme_bw() +
+      facet_wrap(facets=c(crop))
+      
+    outfile <- sprintf(path)
+    
+    ggsave(outfile, plot)
+ 
+  
+}
+
+tar_read(block_bootstrap_predictions) %>% 
+  group_by(model_spec,
+           imputation, 
+           gcm,
+           crop) %>% 
+  ggplot( 
+    aes(x=weighted_mean)) +
+  geom_density(alpha=0.4) +
+  theme_bw() +
+  facet_wrap(facets=c(crop))
+  
+
+# calculate proportions of missing data
+
+tar_read(AGIMPACTS_bs_tp) %>% 
+  group_by(crop_pooled) %>% 
+  summarise(temp=sum(!is.na(Temp.Change))/n(),
+            yield=sum(!is.na(Yield.Change))/n(),
+            precip=sum(!is.na(Precipitation.change))/n(),
+            co2=sum(!is.na(CO2.Change))/n())
+  

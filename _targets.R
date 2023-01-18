@@ -29,6 +29,12 @@ source("scripts/functions_plot_prediction.R")
 source("scripts/targets_plot_prediction.R")
 source("scripts/functions_cross_validation.R")
 source("scripts/targets_cross_validation.R")
+source("scripts/functions_intercept_adj_prediction.R")
+source("scripts/targets_intercept_adj_prediction.R")
+source("scripts/functions_uncertainty.R")
+source("scripts/targets_uncertainty.R")
+source("scripts/functions_map_model_agreement.R")
+source("scripts/targets_map_model_agreement.R")
 
 # need to define packages in this file
 packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
@@ -39,7 +45,8 @@ packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "gg
               "ncdf4", "mice", "miceadds", "Rcpp", "VIM", "cvms", "groupdata2", "exactextractr",
               "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
               "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
-              "readr", "terra", "qs", "rlang", "future", "purrr", "parallelly", "fst")
+              "readr", "terra", "qs", "rlang", "future", "purrr", "parallelly", "fst", "tmap",
+              "cowplot",  "ggpubr", "rsample", "furrr", "gammit")
 
 
 tar_option_set(packages = packages,
@@ -70,11 +77,12 @@ list(
   targets_prediction_data_monf,
   targets_prediction_data_misc,
   targets_prediction_data_cmip,
-  targets_prediction#,
-  #targets_prediction_lm,
-  #targets_plot_predictions
-  #targets_plot_predictions_lm,
-  #targets_cross_validation
+  targets_prediction,
+  targets_plot_predictions,
+  targets_cross_validation,
+  targets_intercept_adj_prediction,
+  targets_uncertainty,
+  targets_map_model_agreement
 )
       
 
