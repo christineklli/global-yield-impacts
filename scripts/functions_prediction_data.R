@@ -30,13 +30,13 @@ manipulate_crop_season <- function(data, raster){
 
 create_cru_prediction_data <- function(file, var_name){
   
-  data <- nc_open(here("data", "CRU data", file)) 
+  data <- ncdf4::nc_open(here("data", "CRU data", file)) 
   
-  var <- ncvar_get(data, attributes(data$var)$names[1])
-  lon <- ncvar_get(data,attributes(data$dim)$names[1])
-  lat <- ncvar_get(data, attributes(data$dim)$names[2])
-  time <- ncvar_get(data, attributes(data$dim)$names[3])
-  atts <- ncatt_get(data, 0)
+  var <- ncdf4::ncvar_get(data, attributes(data$var)$names[1])
+  lon <- ncdf4::ncvar_get(data,attributes(data$dim)$names[1])
+  lat <- ncdf4::ncvar_get(data, attributes(data$dim)$names[2])
+  time <- ncdf4::ncvar_get(data, attributes(data$dim)$names[3])
+  atts <- ncdf4::ncatt_get(data, 0)
   
   dimnames(var) <- list(lon = lon, 
                          lat = lat, 

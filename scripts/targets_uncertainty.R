@@ -92,49 +92,36 @@ targets_uncertainty <- list(
       ncores=3
     ) 
   ), 
-  # unnest so that it is list of 20 models not 4
-  tar_target(
-    block_bootstrap_samples_unnested,
-    {flattenlist(block_bootstrap_samples)}
-  ), 
-  tar_target(
-    block_bootstrap_fit, # for some reason model nested column doesn't appear??
-    fit_block_bootstrap(
-      block_bootstrap_samples_unnested=block_bootstrap_samples_unnested,
-      model_specs=model_specs,
-      ncores=5
-    ),
-    pattern=cross(model_specs, block_bootstrap_samples_unnested),
-    iteration='list'),
-  # only keep fit estimates and identifiers for model spec, crop and m
-  # trying this so that we don't have to renest fit estimates later on
-  # tar_target(block_bootstrap_fit_nested,
-  #            fit_block_bootstrap_nested(
-  #              block_bootstrap_samples=block_bootstrap_samples,
-  #              model_specs=model_specs,
-  #              ncores=5
-  #            ),
-  #            pattern=cross(model_specs, block_bootstrap_samples),
-  #            iteration='list' ),
+  
+  tar_target(block_bootstrap_fit_nested,
+             fit_block_bootstrap_nested_first(
+               block_bootstrap_samples=block_bootstrap_samples,
+               model_specs=model_specs,
+               ncores=5
+             ),
+             pattern=cross(model_specs, block_bootstrap_samples),
+             iteration='list' ),
+  
   tar_target(
     block_bootstrap_fit_only,
-    {t <- block_bootstrap_fit %>% dplyr::select(!c(data, splits))
     
-    df <- data.frame(model_specs=model_specs,
-                     model_spec=c("gam_RS",
-                                  "gam_RI",
-                                  "glm_RS",
-                                  "glm_RI",
-                                  "lm"))
-    t %>% left_join(df, by=c("model_specs")) %>% 
-      relocate(id, model_spec) %>% 
-      dplyr::select(!model_specs)  
-    
+    {lapply(1:5, function(spec){
+      t <- block_bootstrap_fit_nested[[spec]] %>% dplyr::select(!c(data, splits))
+      
+      df <- data.frame(model_specs=model_specs,
+                       model_spec=c("gam_RS",
+                                    "gam_RI",
+                                    "glm_RS",
+                                    "glm_RI",
+                                    "lm"))
+      t %>% left_join(df, by=c("model_specs")) %>%
+        relocate(id, model_spec) %>%
+        dplyr::select(!model_specs)
+    })
     },
-    pattern=map(block_bootstrap_fit)
+    pattern=map(block_bootstrap_fit_nested)
   ),
-  # can't do data_og and data_adj in the one function - too big
-  # need to nest data_future_maize_nested by gcm
+  
   tar_target(data_og_2081_maize_nested_gcm,
              {
                split(data_future_maize_nested[[4]], 
@@ -147,20 +134,14 @@ targets_uncertainty <- list(
              }),
   # prediction
   
-  ## NOTE THAT PREDICT_BLOCK_BOOTSTRAP IS BEING REPLICATED x4
-  ## THIS IS BECAUSE I FORGOT TO SPECIFY THE CROP PRODUCTION DF LIST ELEMENT
-  ## IN THE TARGET COMMAND AND IT IS HARDCODED INTO THE FUNCTION
-  ## DUE TO THE TIME SPEND FOR EACH TARGET, I HAVE JUST REPLICATED THE FUNCTION x4
-  ## NOT IDEAL, COME BACK AND EDIT THE PREDICT BLOCK BOOTSTRAP FN LATER
-  ## WHEN I HAVE 3 DAYS TO SPEND
-  
   tar_target(block_bootstrap_prediction_maize,
-             predict_block_bootstrap(
-               fit=block_bootstrap_fit_only,
+             predict_block_bootstrap_nested(
+               fit=block_bootstrap_fit_only, 
                data_og=data_og_2081_maize_nested_gcm,
                data_adj=data_adj_2081_maize_nested_gcm,
-               crop_production_df=crop_production_df),
-             pattern=cross(slice(block_bootstrap_fit_only, index=c(1:25)),
+               crop_production_df=crop_production_df[[1]]),
+             pattern=cross(slice(block_bootstrap_fit_only,
+                                 index=c(1,5,9,13,17)),
                            map(
                              data_og_2081_maize_nested_gcm,
                              data_adj_2081_maize_nested_gcm
@@ -179,12 +160,13 @@ targets_uncertainty <- list(
                      int_adj_future_rice[[4]]$gcm)
              }),
   tar_target(block_bootstrap_prediction_rice,
-             predict_block_bootstrap_rice(
+             predict_block_bootstrap_nested(
                fit=block_bootstrap_fit_only,
                data_og=data_og_2081_rice_nested_gcm,
                data_adj=data_adj_2081_rice_nested_gcm,
-               crop_production_df=crop_production_df),
-             pattern=cross(slice(block_bootstrap_fit_only, index=c(26:50)),
+               crop_production_df=crop_production_df[[2]]),
+             pattern=cross(slice(block_bootstrap_fit_only,
+                                 index=c(2,6,10,14,18)),
                            map(
                              data_og_2081_rice_nested_gcm,
                              data_adj_2081_rice_nested_gcm
@@ -203,12 +185,13 @@ targets_uncertainty <- list(
                      int_adj_future_soy[[4]]$gcm)
              }),
   tar_target(block_bootstrap_prediction_soy,
-             predict_block_bootstrap_soy(
+             predict_block_bootstrap_nested(
                fit=block_bootstrap_fit_only,
                data_og=data_og_2081_soy_nested_gcm,
                data_adj=data_adj_2081_soy_nested_gcm,
-               crop_production_df=crop_production_df),
-             pattern=cross(slice(block_bootstrap_fit_only, index=c(51:75)),
+               crop_production_df=crop_production_df[[3]]),
+             pattern=cross(slice(block_bootstrap_fit_only,
+                                 index=c(3,7,11,15,19)),
                            map(
                              data_og_2081_soy_nested_gcm,
                              data_adj_2081_soy_nested_gcm
@@ -227,18 +210,20 @@ targets_uncertainty <- list(
                      int_adj_future_wheat[[4]]$gcm)
              }),
   tar_target(block_bootstrap_prediction_wheat,
-             predict_block_bootstrap_wheat(
+             predict_block_bootstrap_nested(
                fit=block_bootstrap_fit_only,
                data_og=data_og_2081_wheat_nested_gcm,
                data_adj=data_adj_2081_wheat_nested_gcm,
-               crop_production_df=crop_production_df),
-             pattern=cross(slice(block_bootstrap_fit_only, index=c(76:100)),
+               crop_production_df=crop_production_df[[4]]),
+             pattern=cross(slice(block_bootstrap_fit_only,
+                                 index=c(4,8,12,16,20)),
                            map(
                              data_og_2081_wheat_nested_gcm,
                              data_adj_2081_wheat_nested_gcm
                            )),
              iteration='list'
   ),
+  
   # rbind all predictions
   tar_target(block_bootstrap_predictions,
              rbind_block_bootstrap_predictions(
@@ -311,7 +296,7 @@ targets_uncertainty <- list(
                  summarise(var=mean(var, na.rm=T),
                            sd=mean(sd, na.rm=T))
              }),
-
+  
   # calculate total global crop production per crop
   tar_target(global_crop_production,
              {
@@ -336,9 +321,52 @@ targets_uncertainty <- list(
                  mutate(combined_sd=sum(sd),
                         combined_var=sum(var),
                         uncertainty=case_when(uncertainty==1 ~ "sampling",
-                                              uncertainty==2 ~ "modelling",
+                                              uncertainty==2 ~ "model",
                                               uncertainty==3 ~ "gcm",
                                               uncertainty==4 ~ "missing")
-                        )
-             })
+                 )
+             }),
+  # prep data for plotting distributions
+  tar_target(block_bootstrap_predictions_crop_list,
+             { maize <- reshape2::melt(block_bootstrap_prediction_maize, id.vars=c("id", "model_spec", "crop", "gcm"))
+             rice <- reshape2::melt(block_bootstrap_prediction_rice, id.vars=c("id", "model_spec", "crop", "gcm"))
+             soy <- reshape2::melt(block_bootstrap_prediction_soy, id.vars=c("id", "model_spec", "crop", "gcm"))
+             wheat <- reshape2::melt(block_bootstrap_prediction_wheat, id.vars=c("id", "model_spec", "crop", "gcm"))
+             
+             l <- list(
+               maize, rice, soy, wheat
+             )
+             
+             lapply(1:4, function(i){
+               l[[i]] %>% 
+                 pivot_wider(., 
+                             id_cols=c("id", "model_spec", "crop", "gcm"),
+                             names_from=variable,
+                             values_from=value,
+                             values_fn=list,
+                             names_expand=TRUE) %>% 
+                 unnest(c(imputation, weighted_mean))
+             })    
+             
+             }
+             
+  ),
+  # plot distributions by gcm 
+  tar_target(
+    plot_bootstrap_distributions_2081_gcm,
+    plot_bootstrap_distributions_gcm(
+      predictions=block_bootstrap_predictions_crop_list,
+      path="results/figures/adjusted_bootstrap_distributions_2081_gcm.png"
+    )
+    
+  ),
+  # plot distributions folding in gcm
+  tar_target(
+    plot_bootstrap_distributions_2081,
+    plot_bootstrap_distributions(
+      predictions=block_bootstrap_predictions_crop_list,
+      path="results/figures/adjusted_bootstrap_distributions_2081.png"
+    )
+    
+  )
 )
