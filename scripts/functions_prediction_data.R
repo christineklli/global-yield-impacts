@@ -183,6 +183,7 @@ make_crop_yield_monf_dt <- function(raster){
    lapply(1:4, function(i) {
   raster::as.data.frame(raster[[i]], xy=TRUE) %>% 
     rename(lon=x, lat=y, bs_yield=3) %>% 
+       mutate(lon=round(lon,2), lat=round(lat,2)) %>% 
     as.data.table})
  }
 
@@ -313,7 +314,8 @@ create_cmip6_pre_df <- function(time_periods){
     cmip6_pre_df <- lapply(1:24, function(i){
       raster::as.data.frame(cmip6_pre[[i]],xy=TRUE) %>% 
         as.data.table() %>% 
-        rename(lon=x, lat=y, pre=layer)
+        rename(lon=x, lat=y, pre=layer) %>% 
+        mutate(lon=round(lon,2), lat=round(lat,2))
     })
   })
 }
@@ -335,7 +337,8 @@ create_cmip6_tmp_df <- function(time_periods){
     cmip6_tmp_df <- lapply(1:24, function(i){
       raster::as.data.frame(cmip6_tmp[[i]],xy=TRUE) %>% 
         as.data.table() %>% 
-        rename(lon=x, lat=y, tmp=3)
+        rename(lon=x, lat=y, tmp=3) %>% 
+        mutate(lon=round(lon,2), lat=round(lat,2))
     })
   })
 }

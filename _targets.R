@@ -35,6 +35,11 @@ source("scripts/functions_uncertainty.R")
 source("scripts/targets_uncertainty.R")
 source("scripts/functions_map_model_agreement.R")
 source("scripts/targets_map_model_agreement.R")
+source("scripts/functions_moore.R")
+source("scripts/targets_moore.R")
+source("scripts/targets_food_security.R")
+# source("scripts/functions_historical.R")
+# source("scripts/targets_historical.R")
 
 # need to define packages in this file
 packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
@@ -46,13 +51,15 @@ packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "gg
               "cleangeo", "rworldxtra", "rasterize", "ggeffects", "ggExtra", "GGally",
               "forestplot", "metafor", "itsadug", "renv", "targets", "stringr",
               "readr", "terra", "qs", "rlang", "future", "purrr", "parallelly", "fst", "tmap",
-              "cowplot",  "ggpubr", "rsample", "furrr", "gammit")
+              "cowplot",  "ggpubr", "rsample", "furrr", "gammit", "spData")
 
 
 tar_option_set(packages = packages,
                memory = "transient", # activate transient memory
                garbage_collection = TRUE, # activate garbage collection
-               format = "qs" # efficient storage format, need to first install qs
+               format = "qs", # efficient storage format, need to first install qs
+               storage="worker",
+               retrieval="worker"
                ) 
 
 # targets pipeline - eventually modularise this by modelling stage
@@ -65,6 +72,7 @@ tar_option_set(packages = packages,
 # note that we skip targets for the manual data validation - retain script 2
 # because it is just too hard to rewrite...for now
 # thus start from scraped + validated data agimpacts_final.csv
+
 
 list(
   targets_data_production,
@@ -82,7 +90,10 @@ list(
   targets_cross_validation,
   targets_intercept_adj_prediction,
   targets_uncertainty,
-  targets_map_model_agreement
+  targets_map_model_agreement,
+  targets_moore,
+  targets_food_security#,
+  #targets_historical
 )
       
 
