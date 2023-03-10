@@ -1,2 +1,2 @@
 # cc-agimpacts
-Intended to be public repository
+Repository for climate change impacts on agricultural productivity estimates.
