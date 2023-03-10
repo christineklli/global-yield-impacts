@@ -354,8 +354,8 @@ adj_predictions_gridded_raster|stem|40838e2f9c2f9c59|7e99bafc64e2b0fb|8a66f1ed14
 adj_predictions_nested|stem|8833121cad375930|2c1c5899c865ff2b|69a45adc2015e7ee|-1777657102||t19405.7785273231s|176a812d7a876195|216314459|qs|local|vector|||2.15||
 adjust_prediction_level_5|function|84843f67c2ae6dfc|||||||||||||||
 ag|stem|8dccca417827e1e9|f7dc103f1a8cf5f6|ef46db3751d8e999|2097024135|processed/agimpacts_final.csv|t18768.0643301368s|7d8781d475cda963|6649330|file|local|vector|||0||
-agimpacts|stem|5aca4131bbf930ac|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19412.3688627765s|09bc64786f1e2783|209059|qs|local|vector|||0.72||
-AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ee50aee0005ceb92|73191263||t19410.3166878901s|213256b23c735206|152466|qs|local|vector|||0.16||
+agimpacts|stem|5aca4131bbf930ac|a6cbc5e76f53ea45|046485d11c3bb6a3|-1304062542||t19426.2312570427s|09bc64786f1e2783|209059|qs|local|vector|||0.41||
+AGIMPACTS|stem|f222121d91691e69|7afa256a9af38342|ee50aee0005ceb92|73191263||t19426.2312649021s|213256b23c735206|152466|qs|local|vector|||0.14||
 AGIMPACTS_bs|stem|895c6d1f82303145|16a31d1bc43e8ebe|cbc09251d71e3505|-712265604||t19398.2125042218s|0f08ccdab6664082|192797|qs|local|vector|||0.02||
 AGIMPACTS_bs_tp|stem|8c447c5426820f43|112a26ca6718487d|39424908f72f9c2b|643954055||t19398.2124864911s|5017b30a847b9ea1|191208|qs|local|vector|||0.14||
 AGIMPACTS_MAIN|stem|8292d86574a7fa37|cc6579e2779068ab|599221b4c2843d83|-1743815918||t19398.18865938s|29be6e7a764d6af5|159969|qs|local|vector|||0.09||
@@ -915,8 +915,9 @@ coords2iso|function|51f9be407aa18c70|||||||||||||||
 country_crop_rank|stem|9690f781714db3ec|4fd0dfe06c687625|b3e42df101d76e6f|-1376069474||t19398.1885952207s|57a5f90f60cae558|9988|qs|local|vector|||0.04||
 country_crop_ranked_df|function|266da3d6d84c2793|||||||||||||||
 country_pop_mder|stem|3698042ca2991f86|8777cc0f9d65d64e|4c89b53d474d8a52|-2113623033||t19408.1405303963s|4a7ff97b6d5d2b11|7242|qs|local|vector|||0.03||
-country_predictions_glmrs_2021_2040|stem|d2f75af16ba87b1b|00b849a6f4001103|da0b86666b021aaf|-1541577967||t19410.3171600257s|eb7bfae5bdd5bc10|3848|qs|local|vector|||0.89||
+country_predictions_glmrs_2021_2040|stem|e8b9e3109fc862a6|39224bf727c29d9b|da0b86666b021aaf|-1541577967||t19426.0809073971s|855d5b85a478b346|3847|qs|local|vector|||2.92||
 country_predictions_tbl|stem|1c5b1dc3cfe255a3|63d8516e41ff3a21|d29112640ecfd7e5|-106672834||t19405.6618439942s|364ca57078eff316|60601|qs|local|vector|||20.7||
+country_production_2021_2040_df|stem|04d120965d93f1ab|701955d1f36bd096|13e141339b5e6a36|7159000||t19426.0809143753s|e99ba9ee4e4d4365|4007|qs|local|vector|||0.03||
 country_production_volume|stem|9c15b78cee4f8abd|e2324fa39d34e85f|276b8955ec32be8f|433342302||t19398.1791628874s|5005c34ef61ae389|6289|qs|local|vector|||22.92||
 country_yields_list|stem|e2bb8b7d0f4e3db8|c8c0e6ecfffa5469|835030c31d7f4458|73361039||t19398.1556750189s|b553c0ff9df84325|79508|qs|local|vector|||166.35||
 create_block_bootstrap_samples|function|cb34101a37f9d672|||||||||||||||
@@ -1000,14 +1001,25 @@ extract_country_crop_season|function|c1a7d19454137bc1|||||||||||||||
 extract_country_cru_data|function|a1629e7ab34779ac|||||||||||||||
 extract_country_yields|function|ea147bc6f2059460|||||||||||||||
 fao_crop_allocation_data|stem|f8e9a6f2d450f592|9daaffcf78eab555|7199b9143a2e7ccc|-1911149464||t19412.2351160357s|e9eb5ae6797a8369|56373|qs|local|vector|||29.38||
+fao_crop_allocation_multiyear|stem|bef8ac7f5828d9df|4942fbccdfaa7150|7dfcdbd563668796|-679375221||t19426.2065343444s|8611d4be283f13c5|73849|qs|local|vector|||0.14||
 fao_crop_allocation_pct|stem|73fd0a2546548bb5|8866002c239a3a4e|1bb91eddf506e832|1457492755||t19412.273338127s|2f6e36b0cfb7a32e|175384|qs|local|vector|||0.14||
 fao_crops|stem|bf908edb702a234f|042a1504fab1f2bb|11ea22480cbfa86b|-1330578154||t19412.3039255788s|e7d9c43b1c994be3|87|qs|local|vector|||0.02||
-fao_trade_alloc|stem||d5b98e4312647248|07940f2f77a01522|708439590||t19415.056519421s||0|qs|local|vector|||0.06||object Area not found
+fao_future_food_supply|stem|1b92b0c5bf432313|fe99a0f719f4ccf5|174f3fa1a0ae5194|-2023639411||t19426.2315124596s|b4db362104df89fa|56547|qs|local|vector|||0.12||
+fao_trade_alloc|stem|465e6f7f7b1fcd1b|78ca3d23c962f102|f1b2d652fda563f6|708439590||t19415.0669566024s|ba05e071a40a79f0|424608|qs|local|vector|||0.17||
 fao_trade_checks|stem|49276a1f10228dcb|0fcad0875e69d4cc|e2d91a5494be0fbb|-309474382||t19415.0276091918s|94bd0098a4117494|6485|qs|local|vector|||0.14||
 fao_trade_checks_complex|stem|99be46f784f31f32|e93629910399b892|1c03a1afbdf14e35|-510726127||t19415.0281275957s|5c5b3f6be68ccf8b|7046|qs|local|vector|||0.16||
 fao_trade_data|stem|d900b5c2169741a3|d54c77464303c16d|7199b9143a2e7ccc|-1967722351||t19412.3015990163s|85f330b689702645|39233210|qs|local|vector|||47.76||
+fao_trade_export|stem|4c23ae6d813c006b|7bf0a6a9c21f52af|b9ccca20f07c169d|1027471462||t19416.2116300865s|23fa881bbe8f5b07|67679|qs|local|vector|||0.63||
+fao_trade_export_alloc|stem|cd9be02e4abd6894|f88880214c4cb04a|82cc05e7fc1c13e5|-1389107642||t19415.1565509967s|430628fd4af6e2b6|50814|qs|local|vector|||0.23||
+fao_trade_export_future|stem||1d43ceaeff49bade|face2153708afbde|1039531195||t19416.8427843147s||0|qs|local|vector|||0.13||1m22mx and y must share the same src.36mℹ39m set copy  TRUE may be slow.
+fao_trade_export_prop|stem|79913de2f4e8a362|614ba67626c62dd9|b35cb3c3fbd0260a|-52319139||t19416.2050327173s|9b131cbfc8b03b63|36779|qs|local|vector|||0.75||
+fao_trade_export_prop_total|stem|21a7d0e97fe133b3|2c608b2a85a108bf|7ca2556917122349|260213220||t19417.0860256877s|30c6f1a5efe91f0c|3575|qs|local|vector|||0.15||
 fao_trade_filtered|stem|59a673771666a33d|8aecdf23eff63c60|0f6947eb5d8b2e8b|-1037236506||t19412.3686098318s|c4afec3ea60c9420|51218|qs|local|vector|||1.44||
 fao_trade_filtered_complex|stem|6ccc47d55435e30e|15cd0faf5500f77f|0f6947eb5d8b2e8b|-805923872||t19412.3685346113s|2cb50bef9485d5fa|130084|qs|local|vector|||1.91||
+fao_trade_future|stem|475f7f430174d4da|fd4e775a618da783|18d9ec8396d6c623|-1081022261||t19426.0499644858s|c2bec8cf2ec4219c|2892|qs|local|vector|||0.14||
+fao_trade_future_exports|stem|7b891a775fc3dc34|5cd473b879381d7b|ff73a960424f0341|410221945||t19426.1691142485s|5e3a796f499617d6|4078|qs|local|vector|||0.02||
+fao_trade_future_imports|stem|8b9c68beb1f16681|b095bd4cc47334c3|b8f529c28873a43a|-1212491031||t19426.1749359861s|77553a21a57d185d|9005|qs|local|vector|||0.03||
+fao_trade_future_partners|stem|01efbfa9911fd14b|42b999c8c761ea18|edb0365f7735b466|-1167307752||t19426.1710810535s|8b84b8a3bf42b26e|82565|qs|local|vector|||0.2||
 file_sacks|stem|3fd292371d6c714c|83097cfa97200ea3|2581e9e248ee6f7e|1376479935||t19398.1495522132s|24d52ebf1535bba2|123|qs|local|vector|||0||
 filter_baseline_periods_cgiar|function|cc2a7f15727b2ebb|||||||||||||||
 fit_attr|pattern|2a57633221671cc0|3702fd7ba9098c67||-566352051||||176338105|qs|local|list||fit_attr_ad086c2d*fit_attr_2521712d*fit_attr_3b5509da*fit_attr_91196b46*fit_attr_bbeda953*fit_attr_ae95c2f5*fit_attr_dc092fb3*fit_attr_a88c6f2a*fit_attr_df6b4e47*fit_attr_de54db07*fit_attr_90010934*fit_attr_3226f3ea*fit_attr_ccef0972*fit_attr_eab1f2cf*fit_attr_e31cf0c7*fit_attr_ad07c7a0*fit_attr_6ed6bec9*fit_attr_672d0156*fit_attr_2c4363b3*fit_attr_3e35776f*fit_attr_936ba517*fit_attr_d6b3660a*fit_attr_089cbd90*fit_attr_2329856d*fit_attr_4c407dfb*fit_attr_2ce00007*fit_attr_ce65b211*fit_attr_492f961f*fit_attr_1f041158*fit_attr_cd28fb13*fit_attr_5e087fa4*fit_attr_afffe576*fit_attr_56302e74*fit_attr_ef201e63*fit_attr_10b43c95*fit_attr_cfdbf2fd*fit_attr_c1e9e1fa*fit_attr_d1084ff1*fit_attr_9b0a5e36*fit_attr_92a37161*fit_attr_e9dc6206*fit_attr_776ca6c7*fit_attr_57784bab*fit_attr_5a07e9f7*fit_attr_e6d6f2f7*fit_attr_41ada73c*fit_attr_6c11b9b3*fit_attr_e9e3b9e2*fit_attr_4d44d42b*fit_attr_2ead7eab*fit_attr_ce7cb093*fit_attr_ec5ae68c*fit_attr_77b40326*fit_attr_c4a55f19*fit_attr_f485def4*fit_attr_4ed5a0d7*fit_attr_634cc2d0*fit_attr_fd6050c5*fit_attr_ec6e9aa7*fit_attr_d943b03d*fit_attr_4872aa37*fit_attr_f60f48f2*fit_attr_05ca47d5*fit_attr_56cbb046*fit_attr_8cbc1540*fit_attr_4028c7a8*fit_attr_88b1def1*fit_attr_84c88b7c*fit_attr_a38dc4ea*fit_attr_b407d4dd*fit_attr_d112822e*fit_attr_58a335e2*fit_attr_244395a2*fit_attr_a243a0f8*fit_attr_bd65fca4*fit_attr_8f4fbd46*fit_attr_8a2478f8*fit_attr_bd3f72b0*fit_attr_48d9f956*fit_attr_b34e8b98*fit_attr_135b4c1c*fit_attr_42c97dc2*fit_attr_fe66f6d4*fit_attr_36f7a1a8*fit_attr_a3122864*fit_attr_7cd43e01*fit_attr_17c565e7*fit_attr_f589ecb0*fit_attr_39b3fda9*fit_attr_dc1dc2fd*fit_attr_02c6e48f*fit_attr_38558c96*fit_attr_f90df471*fit_attr_9b57c27a*fit_attr_4fc84299*fit_attr_0812371c*fit_attr_b7a9ba44*fit_attr_4d0e1aca*fit_attr_7aee9aeb*fit_attr_a641746f|868.829999999999||
@@ -1695,7 +1707,7 @@ targets_data_crop_calendar|object|9ad6469d890a0374|||||||||||||||
 targets_data_production|object|60a94d377e2c2adf|||||||||||||||
 targets_data_tmp_precip|object|f90d04e83df10963|||||||||||||||
 targets_data_yields|object|6ca3571edb94091e|||||||||||||||
-targets_food_security|object|1ab03a173feec9d3|||||||||||||||
+targets_food_security|object|452f5eb6efb63489|||||||||||||||
 targets_historical|object|3d49ffc1a7eabfad|||||||||||||||
 targets_impute|object|e5de16597dee2562|||||||||||||||
 targets_intercept_adj_prediction|object|e360b155bbe2d33d|||||||||||||||
