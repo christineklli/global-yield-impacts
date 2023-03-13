@@ -103,7 +103,7 @@ targets_food_security <- list(
                })
              }
   ),
-  
+
   # adj_predictions_by_time_period but filter for glm rs and 2021-2040, remove model_spec column
   # then split by crop 
   # call yield change predictions in 2021-2040 and multiply by 2015 yield levels
@@ -163,6 +163,34 @@ targets_food_security <- list(
              })
                
              }),
+  
+  
+  # check baseline 2015 production against FAO data - testing this method of converting yields to production volumes
+  tar_target(baseline_yields_production,
+             {
+               yields <- lapply(1:4, function(i){
+                 rasterFromXYZ(yields_gdhy_2015_df[[i]][[1]])
+               })
+               
+               lapply(1:4, function(i){
+                 
+                 production_tons <- area_predictions_raster[[i]] * yields[[i]] * 100
+                 
+                 production <- exactextractr::exact_extract(
+                   production_tons,
+                   World,
+                   fun='sum') 
+                 
+                 data.frame(
+                   name=World$name_long,
+                   iso_a2=World$iso_a2,
+                   production=production)
+                 
+               })
+               
+               
+             }),
+  
   # FAO crop allocation data
   tar_target(fao_crop_allocation_data,
              read_csv(
@@ -419,7 +447,7 @@ targets_food_security <- list(
                    Element, 
                    Prop
                  ), by = c("Partner Countries"="Area", "alloc_crops"="Item")) %>%  
-         
+                 
                  filter(Element %in% c(
                    "Feed",
                    "Food",
@@ -430,14 +458,94 @@ targets_food_security <- list(
                    "Tourist consumption",
                    "Processing"
                  ))
-               # calculate food use in tons 
-               # convert to food calories
-               # calculate feed allocation in tons
                
-               # convert feed calories to food calories
              } 
              
-  )
+  ),
+  # calculate food use in tons 
+  # convert to food calories
+  # calculate feed allocation in tons
+  # convert feed calories to food calories
+  tar_target(fao_animal_production_data,
+             read_csv("data/Food security data/FAOSTAT_data_en_3-13-2023_FBS_feed_products.csv")),
+  
+  tar_target(fao_animal_production_feed,
+             {  # sum production per product over the years
+               country_item_production <- fao_animal_production_data %>%
+                 group_by(Area, Item) %>% 
+                 summarise(Sum_Value = sum(Value, na.rm=T))
+               
+               
+             }),
+  # read in world bank country economic group
+  tar_target(world_bank_country_list,
+             readxl::read_xlsx("data/Food security data/World_Bank_3-13-2023_CLASS.xlsx",
+                               sheet="List of economies")),
+  # add Cassidy et al. 2011 grazing systems estimate from SI
+  tar_target(grazing_income_group,
+             {tribble(
+               ~`Income group`, ~grazing_prop, ~Item,
+               "High income", 0.16, "Bovine Meat",
+               "Upper middle income", 0.16, "Bovine Meat",
+               "Lower middle income",  0.32, "Bovine meat",
+               "Low income", 0.32, "Bovine Meat"
+             )}),
+  # livestock feed conversion efficiencies from Cassidy et al. 2011 Table S6
+  tar_target(livestock_feed_conversion,
+             {tribble(
+               ~Item, ~conversion,
+               "Bovine Meat", 0.0308,
+               "Pigmeat", 0.1043,
+               "Poultry Meat", 0.1178,
+               "Eggs", 0.2207,
+               "Milk - Excluding Butter", 0.4025
+             )}),
+  # join both to fao_animal_production_feed
+  tar_target(fao_animal_product_feed_calories,
+             {
+               df <- fao_animal_production_feed %>% 
+                 left_join(dplyr::select(world_bank_country_list,
+                                         Economy,
+                                         `Income group`),
+                           by=c("Area"="Economy")) %>% 
+                 left_join(grazing_income_group,
+                           by=c("Income group", "Item")) %>%
+                 left_join(livestock_feed_conversion,
+                           by=c("Item")) %>% 
+                 # re-account for grazing via adjusted proportions
+                 mutate(Sum_adj = case_when(
+                   !is.na(grazing_prop) ~ Sum_Value*(1-grazing_prop),
+                   is.na(grazing_prop) ~ Sum_Value)
+                 ) 
+                 # summarise across items as a separate table, then left-join back to df by country
+                 country_total_production <- df %>% 
+                   group_by(Area) %>% 
+                   summarise(Total_Value = sum(Sum_adj, na.rm=T))
+                 # mutate proportion column
+                 df %>% 
+                   left_join(country_total_production, by = c("Area")) %>% 
+                   mutate(Prop = Sum_adj/Total_Value)
+             }),
+  
+  # # calculate weighted average feed-to-calories conversion factor by country
+  tar_target(fao_country_feed_calories,
+             {
+               fao_animal_product_feed_calories %>%
+                 group_by(Area) %>% 
+                 summarise(feed_conversion = weighted.mean(
+                   conversion, Prop
+                 ))
+             }),
+  # create tribble of food to calories conversion from Cassidy et al. 2013 for 4 crops
+  tar_target(crop_calorie_conversion,
+             {tribble(
+               ~Item, ~crop_conversion,
+               "Maize (corn)", 3580802.60,
+               "Rice", 2800000.00,
+               "Soya beans", 3596499.11,
+               "Wheat", 3284000.00
+             )})
+  # left join feed and food calorie conversion back to fao_future_food_supply
 )
 # tar_target(fao_trade_export_prop_partner,
 #            {
