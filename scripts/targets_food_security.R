@@ -742,7 +742,12 @@ tar_target(yields_resampled_raster,
                         calorie_gap_prop = round(calorie_gap_prop,2)) %>% 
                  dplyr::select(!c("Entity")) %>% 
                  rename(Country=`Partner Countries`)
-               })
+               }),
+tar_target(global_food_gap,
+           {future_food_gap %>% 
+               summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
+                         total_calorie_demand = sum(calories_demand, na.rm=T),
+                         calorie_gap = total_calorie_demand/total_calorie_supply)})
 # also break down the difference between current production & future production
 # and attribution to population growth vs production change - waterfall graph?
 )
