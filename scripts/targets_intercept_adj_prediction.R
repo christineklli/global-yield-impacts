@@ -225,6 +225,7 @@ tar_target(adj_predictions_nested,
            }
            
 ),
+
 # calculate global production weighted predictions
 tar_target(adj_predictions_global_wt_mean,
            create_global_predictions_tbl(
