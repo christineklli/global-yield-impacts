@@ -12,10 +12,10 @@ tar_option_set(packages=packages,
 
 targets_food_security <- list(
   
-
-# future population calorie demand ----------------------------------------
-
-
+  
+  # future population calorie demand ----------------------------------------
+  
+  
   tar_target(pop_10km_file,
              {here("data", "Food security data", "RCP8.5_10000m.tif")},
              format="file"),
@@ -108,10 +108,10 @@ targets_food_security <- list(
   #              })
   #            }
   # ),
-
-# future production of food supply ----------------------------------------
-
-
+  
+  # future production of food supply ----------------------------------------
+  
+  
   # adj_predictions_by_time_period but filter for glm rs and 2021-2040, remove model_spec column
   # then split by crop 
   # call yield change predictions in 2021-2040 and multiply by 2015 yield levels
@@ -138,7 +138,7 @@ targets_food_security <- list(
                #   
                # })
              }),
-
+  
   # calculate area of future yields raster cells
   # tar_target(area_predictions_raster,
   #            {lapply(1:4, function(i) {
@@ -192,10 +192,10 @@ targets_food_security <- list(
                r
              }
   ),
-
-# checks ------------------------------------------------------------------
-
- 
+  
+  # checks ------------------------------------------------------------------
+  
+  
   
   
   # check baseline 2015 production against FAO data - testing this method of converting yields to production volumes
@@ -231,7 +231,7 @@ targets_food_security <- list(
                       iso2=ifelse(name=="Namibia", "NA", iso2),
                       iso2=ifelse(name=="China", "C_", iso2),
                       name=ifelse(iso2=="GB", "United Kingdom of Great Britain and Northern Ireland", name)
-                      )
+               )
              
              }),
   
@@ -268,10 +268,10 @@ targets_food_security <- list(
              }
              
   ),
-
-# estimate projected production -------------------------------------------
-
-
+  
+  # estimate projected production -------------------------------------------
+  
+  
   ## estimate projected production relative to production in 2015 from GAEZ data
   
   tar_target(yields_glmrs_2021_2040_raster,
@@ -280,21 +280,21 @@ targets_food_security <- list(
                yield <- raster::aggregate(grogan_yield_raster[[i]], 
                                           c(0.5, 0.5)/res(grogan_yield_raster), 
                                           mean)
-             
+               
                pred_r <- rasterFromXYZ(predictions_glmrs_2021_2040[[i]],
                                        crs="+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-              
+               
                # future yield = (1 + yield change/100) * baseline yield
                # total production per pixel = yield in tons/hectare x number of hectares 
                (1+pred_r/100) * yield # * hectares * 1000
                
              })),
- # resample yields raster to be ahigher resolution
-tar_target(yields_resampled_raster,
-           lapply(1:4, function(i){
-             resample(yields_glmrs_2021_2040_raster[[i]], grogan_hectares_raster[[i]], method="bilinear")
-           })),
-
+  # resample yields raster to be ahigher resolution
+  tar_target(yields_resampled_raster,
+             lapply(1:4, function(i){
+               resample(yields_glmrs_2021_2040_raster[[i]], grogan_hectares_raster[[i]], method="bilinear")
+             })),
+  
   # tar_target(grogan_hectares_raster_0.5, {
   #   lapply(1:4, function(i){
   #     raster::aggregate(grogan_hectares_raster[[i]], 
@@ -306,14 +306,14 @@ tar_target(yields_resampled_raster,
              {
                lapply(1:4, function(i){
                  
-               
+                 
                  yields_resampled_raster[[i]] * grogan_hectares_raster[[i]] * 1000 
                })
              }),
   
   tar_target(country_predictions_glmrs_2021_2040,
              {lapply(1:4, function(i){
-              
+               
                production <- exactextractr::exact_extract(
                  predictions_glmrs_2021_2040_raster[[i]],
                  World,
@@ -327,8 +327,8 @@ tar_target(yields_resampled_raster,
              })
                
              }),
-
-# compare baseline and future production in tons
+  
+  # compare baseline and future production in tons
   tar_target(country_baseline_future_production,
              {
                lapply(1:4, function(i){
@@ -344,14 +344,17 @@ tar_target(yields_resampled_raster,
                           production_2015_fao=Value_fao,
                           production_2021_2040=production) %>% 
                    mutate(pct_change=round((production_2021_2040-production_2015_gaez)/production_2015_gaez,2)) %>% 
-                   dplyr::select(!c("iso_a2", "production_2015_fao"))
+                   
+                   left_join(dplyr::select(
+                     as.data.frame(worldmap_clean),
+                     ISO_A2, ISO_A3), by=c("iso_a2"="ISO_A2"))
                })
              }),
-
-
-# crop allocation ---------------------------------------------------------
-
-
+  
+  
+  # crop allocation ---------------------------------------------------------
+  
+  
   
   # FAO crop allocation data
   tar_target(fao_crop_allocation_data,
@@ -389,10 +392,10 @@ tar_target(yields_resampled_raster,
              }),
   # now to calculate importing nations allocations
   # read in TM data
-
-# future exports and imports -----------------------------------------------------------------
-
-
+  
+  # future exports and imports -----------------------------------------------------------------
+  
+  
   tar_target(fao_trade_filtered,
              read_csv(
                "data/Food security data/FAOSTAT_data_en_3-20-2023_filtered_trade_matrix.csv"
@@ -447,7 +450,7 @@ tar_target(yields_resampled_raster,
                  group_by(`Reporter Countries`, Item, Year) %>% 
                  summarise(Exports_trade=sum(Value,na.rm=T)) %>% 
                  mutate(
-                        Exports_trade = Exports_trade/1000) # for comparison with alloc data
+                   Exports_trade = Exports_trade/1000) # for comparison with alloc data
                
                concord <- data.frame(
                  alloc_crops = fao_crops, # same order
@@ -532,7 +535,7 @@ tar_target(yields_resampled_raster,
   
   # left join to future yield production by Reporter Countries = Country and crops
   tar_target(fao_trade_future_exports,
-    
+             
              {
                fao_trade_future %>% 
                  left_join(country_production_2021_2040_df, 
@@ -547,7 +550,7 @@ tar_target(yields_resampled_raster,
                x <- fao_trade_filtered %>% 
                  
                  mutate(
-                        Exports_trade = Value/1000) %>% 
+                   Exports_trade = Value/1000) %>% 
                  dplyr::select(!c("Value")) %>% 
                  ungroup()
                
@@ -574,12 +577,12 @@ tar_target(yields_resampled_raster,
                
              }),
   # calculate future imports for each country (sum of exports across all export partners)
-
+  
   tar_target(fao_trade_future_imports,
              fao_trade_future_partners %>% 
                group_by(`Partner Countries`, Item) %>% 
                summarise(imports_future = sum(partner_exports_future, na.rm=T))),   # expressed in tons
-
+  
   # sum future production and imports
   tar_target(fao_future_food_supply,
              {fao_trade_future_imports %>% 
@@ -595,7 +598,7 @@ tar_target(yields_resampled_raster,
                    !is.infinite(imports_future) & !is.infinite(production) ~ sum(imports_future, production, na.rm=T),
                    !is.infinite(imports_future) & is.infinite(production) ~ imports_future,
                    is.infinite(imports_future) & !is.infinite(production) ~ production)
-                   ) %>% 
+                 ) %>% 
                  left_join(concord, by = c("Item"="trade_crops")) %>% 
                  
                  # apply crop allocation percentages
@@ -621,11 +624,11 @@ tar_target(yields_resampled_raster,
              } 
              
   ),
-
-
-# convert future production to calories -----------------------------------
-
-
+  
+  
+  # convert future production to calories -----------------------------------
+  
+  
   # calculate food use in tons 
   # convert to food calories
   # calculate feed allocation in tons
@@ -680,14 +683,14 @@ tar_target(yields_resampled_raster,
                    !is.na(grazing_prop) ~ Sum_Value*(1-grazing_prop),
                    is.na(grazing_prop) ~ Sum_Value)
                  ) 
-                 # summarise across items as a separate table, then left-join back to df by country
-                 country_total_production <- df %>% 
-                   group_by(Area) %>% 
-                   summarise(Total_Value = sum(Sum_adj, na.rm=T))
-                 # mutate proportion column
-                 df %>% 
-                   left_join(country_total_production, by = c("Area")) %>% 
-                   mutate(Prop = Sum_adj/Total_Value)
+               # summarise across items as a separate table, then left-join back to df by country
+               country_total_production <- df %>% 
+                 group_by(Area) %>% 
+                 summarise(Total_Value = sum(Sum_adj, na.rm=T))
+               # mutate proportion column
+               df %>% 
+                 left_join(country_total_production, by = c("Area")) %>% 
+                 mutate(Prop = Sum_adj/Total_Value)
              }),
   
   # # calculate weighted average feed-to-calories conversion factor by country
@@ -709,7 +712,7 @@ tar_target(yields_resampled_raster,
                "Wheat", 3284000.00, "Wheat and products"
              )}),
   # left join feed and food calorie conversion back to fao_future_food_supply
-  tar_target(future_food_calories,
+  tar_target(future_calories,
              {fao_future_food_supply %>% 
                  filter(Element %in% c("Feed", "Food")) %>% 
                  left_join(fao_country_feed_calories, by=c("Partner Countries"="Area")) %>% 
@@ -717,19 +720,22 @@ tar_target(yields_resampled_raster,
                  # pivot_longer(., c("crop_conversion", "feed_conversion"), 
                  #              names_to = "conversion_element", 
                  #              values_to= "conversion_factor")
-                mutate(food_calories=total_supply*Prop*crop_conversion,
-                       feed_calories=total_supply*Prop*feed_conversion,
-                       total_calories=food_calories+feed_calories) %>% 
-                 group_by(`Partner Countries`) %>% 
-                 summarise(total_calories=sum(total_calories, na.rm=T))
-               }),
-# join with country_pop_mder for country annual mder shortfall
+                 mutate(food_calories=total_supply*Prop*crop_conversion,
+                        feed_calories=total_supply*Prop*feed_conversion,
+                        total_calories=food_calories+feed_calories)
+             }),
+  tar_target(future_total_calories,
+             future_calories %>% 
+               group_by(`Partner Countries`) %>% 
+               summarise(total_calories=sum(total_calories, na.rm=T))
+  ),
+  # join with country_pop_mder for country annual mder shortfall
   tar_target(future_food_gap,
-             {future_food_calories %>% 
+             {future_total_calories %>% 
                  left_join(fao_iso2, by=c("Partner Countries"="name")) %>% 
                  left_join(dplyr::select(
                    as.data.frame(worldmap_clean),
-                 ISO_A2, ISO_A3), by=c("iso2"="ISO_A2")) %>% 
+                   ISO_A2, ISO_A3), by=c("iso2"="ISO_A2")) %>% 
                  left_join(dplyr::select(country_pop_mder,
                                          Entity,
                                          Code,
@@ -738,16 +744,151 @@ tar_target(yields_resampled_raster,
                  rename(calories_supply=total_calories,
                         calories_demand=mder_pop_annual_2021_2040) %>% 
                  mutate(
-                        calorie_gap_prop = calories_demand/calories_supply,
-                        calorie_gap_prop = round(calorie_gap_prop,2)) %>% 
+                   calorie_gap_prop = calories_demand/calories_supply,
+                   calorie_gap_prop = round(calorie_gap_prop,2)) %>% 
                  dplyr::select(!c("Entity")) %>% 
                  rename(Country=`Partner Countries`)
-               }),
-tar_target(global_food_gap,
-           {future_food_gap %>% 
-               summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
-                         total_calorie_demand = sum(calories_demand, na.rm=T),
-                         calorie_gap = total_calorie_demand/total_calorie_supply)})
-# also break down the difference between current production & future production
-# and attribution to population growth vs production change - waterfall graph?
+             }),
+  tar_target(global_food_gap,
+             {future_food_gap %>% 
+                 summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
+                           total_calorie_demand = sum(calories_demand, na.rm=T),
+                           calorie_gap = total_calorie_demand/total_calorie_supply)}),
+  # calculate only calories from food (not feed) and total calories from crops other than maize/rice/soy/wheat
+  tar_target(future_crop_calories,
+             {future_calories %>% 
+                 group_by(`Partner Countries`) %>% 
+                 summarise(total_food_calories=sum(food_calories, na.rm=T)) %>% 
+                 mutate(total_calories = total_food_calories/0.6417) # from tilman; maize+rice+soy+wheat=0.6417 (not including feed)
+             }),
+  # calculate prevalence of undernourishment
+  # (supply/0.7 - demand)/(mder per person per year) and /population
+  tar_target(pou_by_country,
+             {future_food_gap %>% 
+                 left_join(dplyr::select(country_pop_mder, Code, mder_annual_2020, pop_2021_2040), 
+                           by = c("ISO_A3"="Code")) %>% 
+                 mutate(calories_supply_total = calories_supply/0.7,
+                        food_insecure_persons = (calories_demand - calories_supply_total)/mder_annual_2020,
+                        pou_rate = food_insecure_persons/pop_2021_2040)
+               
+             }),
+  # current production from fao and from grogan yield x hectares data
+  tar_target(country_baseline_future_production_df,
+             {
+               rbindlist(country_baseline_future_production,
+                         idcol="crop_no") %>% 
+                 left_join(data.frame(crop_no=c(1:4),
+                                      crop=crops), by="crop_no") %>% 
+                 dplyr::select(!c("crop_no"))
+             }),
+  # calculate total production in tons across all crops
+  # this looks pretty reasonable in terms of changes, am guessing most of the 
+  # shortfall in demand comes from growth in population
+  tar_target(country_baseline_future_production_totals,
+             {
+               country_baseline_future_production_df %>% 
+                 group_by(name,iso_a2,ISO_A3) %>% 
+                 summarise(total_production_2021_2040=sum(production_2021_2040,na.rm=T),
+                           total_production_2015_gaez=sum(production_2015_gaez,na.rm=T),
+                           total_production_2015_fao=sum(production_2015_fao,na.rm=T))
+             }),
+  # read in import quantities from 2014-2016 of crops from FAO by country from FBS
+  tar_target(fao_import_2015_data,
+             read_csv("data/Food security data/FAOSTAT_data_en_3-21-2023_import_201416.csv")),
+  tar_target(fao_import_2015_processed,
+             {
+               fao_import_2015_data %>% 
+                 group_by(Area, Item) %>% 
+                 summarise(imports_2015 = mean(Value, na.rm=T)) %>% 
+                 mutate(imports_2015=imports_2015*1000)
+             }),
+  
+  # left join crop conversions to calculate total calories in baseline and future 
+  tar_target(baseline_calories_by_crop,
+             {
+               country_baseline_future_production_df %>% 
+                 left_join(fao_iso2, by=c("iso_a2"= "iso2", "name")) %>%
+                 left_join(data.frame(crop=crops, alloc_crops=c("Maize and products",
+                                                         "Rice and products",
+                                                         "Soyabeans",
+                                                         "Wheat and products"))) %>% 
+                 left_join(fao_crop_allocation_multiyear, 
+                           by=c("name"="Area", "alloc_crops"="Item")) %>% 
+                 filter(Element %in% c("Feed", "Food")) %>% 
+                 left_join(fao_country_feed_calories, by=c("name"="Area")) %>% 
+                 left_join(crop_calorie_conversion, by=c("alloc_crops")) %>% # need to left join import quantities in 2015 from FAO
+                 left_join(fao_import_2015_processed,
+                           by=c("name"="Area", "alloc_crops"="Item")) %>% 
+               dplyr::select(!c("alloc_crops", "pct_change", "Alloc_Total", "Total_Supply", "production_2021_2040")) %>% 
+                 mutate(
+                   #gaez
+                   total_supply_gaez = case_when(
+                     !is.infinite(imports_2015) & !is.infinite(production_2015_gaez) ~ sum(imports_2015, production_2015_gaez, na.rm=T),
+                     !is.infinite(imports_2015) & is.infinite(production_2015_gaez) ~ imports_2015,
+                     is.infinite(imports_2015) & !is.infinite(production_2015_gaez) ~ production_2015_gaez),
+                   #fao
+                   total_supply_fao = case_when(
+                     !is.infinite(imports_2015) & !is.infinite(production_2015_fao) ~ sum(imports_2015, production_2015_fao, na.rm=T),
+                     !is.infinite(imports_2015) & is.infinite(production_2015_fao) ~ imports_2015,
+                     is.infinite(imports_2015) & !is.infinite(production_2015_fao) ~ production_2015_fao),
+                   #gaez
+                   food_calories_gaez=total_supply_gaez*Prop*crop_conversion,
+                   feed_calories_gaez=total_supply_gaez*Prop*feed_conversion,
+                   total_calories_gaez=food_calories_gaez+feed_calories_gaez,
+                   # fao
+                   food_calories_fao=total_supply_fao*Prop*crop_conversion,
+                   feed_calories_fao=total_supply_fao*Prop*feed_conversion,
+                   total_calories_fao=food_calories_fao+feed_calories_fao
+                 ) 
+             }),
+  
+  # need average 2015 (2014-2016) population from FAO
+  tar_target(fao_population_2015_data,
+             {read_csv("data/Food security data/FAOSTAT_data_en_3-21-2023_population_201416.csv")}),
+  tar_target(fao_population_2015,
+             {fao_population_2015_data %>% 
+                 group_by(Area) %>% 
+                 summarise(Value=mean(Value,na.rm=T)) %>% 
+                 mutate(pop_2015=Value*1000) %>% 
+                 left_join(fao_iso2, by=c("Area"="name")) %>% 
+                 left_join(dplyr::select(
+                   as.data.frame(worldmap_clean),
+                   ISO_A2, ISO_A3), by=c("iso2"="ISO_A2"))}
+  ),
+  # need 2015 mder_annual_2015
+  tar_target(country_pop_mder_2015,
+             {mder_data %>% 
+                 filter(Year==2015) %>% 
+                 left_join(fao_population_2015, by = c("Code"="ISO_A3")) %>% 
+                 dplyr::select(!c("Year")) %>% 
+                 rename(mder_daily_2015 = 3) %>% 
+                 mutate(mder_annual_2015 = mder_daily_2015 * 365.25,
+                        mder_pop_daily_2015 = mder_daily_2015 * pop_2015,
+                        mder_pop_annual_2015 = mder_annual_2015 * pop_2015)
+             } # 194-177=17 countries will not have population information
+  ),
+  
+  tar_target(baseline_2015_total_calories,
+             {
+               baseline_calories_by_crop %>% 
+                 group_by(name,ISO_A3) %>% 
+                 summarise(total_calories_gaez=sum(total_calories_gaez,na.rm=T),
+                           total_calories_fao=sum(total_calories_fao,na.rm=T)) %>% 
+                 left_join(dplyr::select(
+                   country_pop_mder_2015, 
+                   Code, mder_pop_annual_2015, mder_annual_2015, pop_2015), 
+                   by = c("ISO_A3"="Code")) %>% 
+                 rename(calories_demand=mder_pop_annual_2015) %>% 
+                 mutate(calories_supply_total_gaez = total_calories_gaez/0.7,
+                        calories_supply_total_fao = total_calories_fao/0.7,
+                        food_insecure_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
+                        pou_rate_gaez = food_insecure_persons_gaez/pop_2015,
+                        food_insecure_persons_fao = (calories_demand - calories_supply_total_fao)/mder_annual_2015,
+                        pou_rate_fao = food_insecure_persons_fao/pop_2015)
+             }
+  )
+  
+  # break down the difference between current production & future production
+  
+  # and attribution to population growth vs production change - waterfall graph?
 )
