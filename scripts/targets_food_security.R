@@ -384,7 +384,8 @@ targets_food_security <- list(
                            group_by(Area,Item) %>% 
                            summarise(Total_Supply = sum(Value, na.rm=T)),
                          by=c("Area","Item")) %>% 
-               mutate(Prop = Alloc_Total/Total_Supply)
+               mutate(Prop = Alloc_Total/Total_Supply) %>% 
+               left_join(fao_iso2, by=c("Area"="name"))
              # note that only the crop uses sum to 1 = Domestic Supply Quantity:
              # Feed, Food, Seed, Losses, Other uses, Residuals, Seed 
              # and so only those as a proportion of domestic supply quantity should be considered
@@ -538,8 +539,9 @@ targets_food_security <- list(
              
              {
                fao_trade_future %>% 
+                 left_join(fao_iso2,by=c("Reporter Countries"="name")) %>% 
                  left_join(country_production_2021_2040_df, 
-                           by=c("Reporter Countries" = "name", "alloc_crops")) %>% 
+                           by=c("iso2" = "iso_a2", "alloc_crops")) %>% 
                  # multiply export.prop by future production for total future exports
                  mutate(exports_future = Exports.alloc.total.prop * production)
              }),
@@ -700,7 +702,8 @@ targets_food_security <- list(
                  group_by(Area) %>% 
                  summarise(feed_conversion = weighted.mean(
                    conversion, Prop
-                 ))
+                 )) %>% 
+                 left_join(fao_iso2, by=c("Area"="name"))
              }),
   # create tribble of food to calories conversion from Cassidy et al. 2013 for 4 crops
   tar_target(crop_calorie_conversion,
@@ -769,7 +772,8 @@ targets_food_security <- list(
                            by = c("ISO_A3"="Code")) %>% 
                  mutate(calories_supply_total = calories_supply/0.7,
                         food_insecure_persons = (calories_demand - calories_supply_total)/mder_annual_2020,
-                        pou_rate = food_insecure_persons/pop_2021_2040)
+                        pou_rate = food_insecure_persons/pop_2021_2040) %>% 
+                 filter(ISO_A3 != "Ashm")
                
              }),
   # current production from fao and from grogan yield x hectares data
@@ -800,26 +804,30 @@ targets_food_security <- list(
                fao_import_2015_data %>% 
                  group_by(Area, Item) %>% 
                  summarise(imports_2015 = mean(Value, na.rm=T)) %>% 
-                 mutate(imports_2015=imports_2015*1000)
+                 mutate(imports_2015=imports_2015*1000) %>% 
+                 left_join(fao_iso2, by=c("Area"="name"))
              }),
   
   # left join crop conversions to calculate total calories in baseline and future 
-  tar_target(baseline_calories_by_crop,
+  tar_target(baseline_2015_calories_by_crop,
              {
                country_baseline_future_production_df %>% 
-                 left_join(fao_iso2, by=c("iso_a2"= "iso2", "name")) %>%
                  left_join(data.frame(crop=crops, alloc_crops=c("Maize and products",
-                                                         "Rice and products",
-                                                         "Soyabeans",
-                                                         "Wheat and products"))) %>% 
-                 left_join(fao_crop_allocation_multiyear, 
-                           by=c("name"="Area", "alloc_crops"="Item")) %>% 
+                                                                "Rice and products",
+                                                                "Soyabeans",
+                                                                "Wheat and products"))) %>% 
+                 
+                 left_join(dplyr::select(fao_crop_allocation_multiyear, iso2, Item, Element, Prop), 
+                           by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
                  filter(Element %in% c("Feed", "Food")) %>% 
-                 left_join(fao_country_feed_calories, by=c("name"="Area")) %>% 
+                 left_join(dplyr::select(fao_country_feed_calories, feed_conversion, iso2), by=c("iso_a2"="iso2")) %>% 
                  left_join(crop_calorie_conversion, by=c("alloc_crops")) %>% # need to left join import quantities in 2015 from FAO
-                 left_join(fao_import_2015_processed,
-                           by=c("name"="Area", "alloc_crops"="Item")) %>% 
-               dplyr::select(!c("alloc_crops", "pct_change", "Alloc_Total", "Total_Supply", "production_2021_2040")) %>% 
+                 left_join(dplyr::select(fao_import_2015_processed, Item, imports_2015, iso2),
+                           by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
+                 dplyr::select(!c("alloc_crops", "pct_change", "production_2021_2040", "Area.x", "Area.y")) %>% 
+                 rowwise() %>% 
+                 # is it appropriate to multiply non-crop-specific feed conversion factor by crop-specific supply?
+                 # yes, because feed is not differentiated by feed type, only by animal type
                  mutate(
                    #gaez
                    total_supply_gaez = case_when(
@@ -869,8 +877,8 @@ targets_food_security <- list(
   ),
   
   tar_target(baseline_2015_total_calories,
-             {
-               baseline_calories_by_crop %>% 
+             {# only 145 countries
+               baseline_2015_calories_by_crop %>% 
                  group_by(name,ISO_A3) %>% 
                  summarise(total_calories_gaez=sum(total_calories_gaez,na.rm=T),
                            total_calories_fao=sum(total_calories_fao,na.rm=T)) %>% 
@@ -884,11 +892,63 @@ targets_food_security <- list(
                         food_insecure_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
                         pou_rate_gaez = food_insecure_persons_gaez/pop_2015,
                         food_insecure_persons_fao = (calories_demand - calories_supply_total_fao)/mder_annual_2015,
-                        pou_rate_fao = food_insecure_persons_fao/pop_2015)
+                        pou_rate_fao = food_insecure_persons_fao/pop_2015) %>% 
+                 filter(ISO_A3 != "Ashm")
              }
-  )
+  ),
+  # write out pou_rates future and present into csv
+  tar_target(pou_by_country_future_csv,
+             write_csv(pou_by_country, "processed/pou_by_country_2021_2040.csv")),
+  tar_target(pou_by_country_baseline_csv,
+             write_csv(baseline_2015_total_calories, "processed/pou_by_country_2015.csv")),
   
   # break down the difference between current production & future production
+  tar_target(change_in_pou_rate,
+             {future <- pou_by_country %>% 
+               dplyr::select(c("Country", "iso2","ISO_A3","calories_demand","calories_supply_total","pou_rate")) %>% 
+               rename(calories_demand_2030=calories_demand,
+                      calories_supply_total_2030=calories_supply_total,
+                      pou_rate_2030 = pou_rate) %>% 
+               mutate(FI_status_2030 = ifelse(pou_rate_2030 < 0, 0, 1)) # 1=insecure
+             
+             baseline <- baseline_2015_total_calories %>% 
+               dplyr::select(c("name", "ISO_A3", "calories_supply_total_gaez", "calories_demand", "pou_rate_gaez")) %>% 
+               rename(Country=name,
+                      calories_supply_total_2015 = calories_supply_total_gaez,
+                      calories_demand_2015 = calories_demand,
+                      pou_rate_2015 = pou_rate_gaez) %>% 
+               mutate(FI_status_2015 = ifelse(pou_rate_2015 < 0, 0, 1)) # 1=insecure
+             
+             data <- baseline %>% left_join(future,
+                                    by=c("ISO_A3")) %>% 
+               mutate(FI_status_change = case_when(FI_status_2015==0 & FI_status_2030==1 ~ "become insecure",
+                                                   FI_status_2015==0 & FI_status_2030==0 ~ "remain secure",
+                                                   FI_status_2015==1 & FI_status_2030==1 ~ "remain insecure",
+                                                   FI_status_2015==1 & FI_status_2030==0 ~ "become secure"))
+             
+             data %>% write_csv("processed/baseline_future_pou_rates.csv")
+             
+             data
+             
+             
+             }),
+  # heat map of just the four categorical variables of FI status change
+  tar_target(plot_FI_status_change,
+             {
+               data <- change_in_pou_rate %>% 
+                 dplyr::select(iso2, ISO_A3, FI_status_change) 
+               
+               dat <- World %>% left_join(data, by=c("iso_a2"="iso2"))
+               
+               plot <- tmap::tm_shape(dat) +
+                 tm_fill("FI_status_change",
+                         palette = c("orange", "lightgreen","red3","darkgreen"),
+                         title= '2015 to 2021-2040') +
+                 tmap::tm_shape(World) +
+                 tmap::tm_borders("grey", lwd =1) 
+               
+               tmap::tmap_save(plot, filename="results/figures/change_in_FI_status.png", height=4, width=10, asp=0)
+               plot
+             })
   
-  # and attribution to population growth vs production change - waterfall graph?
 )
