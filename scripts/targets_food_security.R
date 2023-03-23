@@ -1011,12 +1011,14 @@ targets_food_security <- list(
   tar_target(change_in_calories,
              {
                future <- pou_by_country %>% 
-                 dplyr::select(c("Country", "ISO_A3","calories_demand","calories_supply_total")) %>% 
+                 dplyr::select(c("Country", "ISO_A3","calories_demand","calories_supply_total",
+                                 "mder_annual_2020","pop_2021_2040")) %>% 
                  rename(calories_demand_2030=calories_demand,
                         calories_supply_total_2030=calories_supply_total) 
                
                baseline <- baseline_2015_total_calories %>% 
-                 dplyr::select(c("ISO_A3", "calories_supply_total_gaez", "calories_demand")) %>% 
+                 dplyr::select(c("ISO_A3", "calories_supply_total_gaez", "calories_demand",
+                                 "mder_annual_2015","pop_2015")) %>% 
                  rename(calories_supply_total_2015 = calories_supply_total_gaez,
                         calories_demand_2015 = calories_demand) 
                
@@ -1025,19 +1027,27 @@ targets_food_security <- list(
                  rowwise() %>% 
                  mutate(change_demand_calories = calories_demand_2030-calories_demand_2015,
                         change_supply_calories = calories_supply_total_2030-calories_supply_total_2015,
-                        calorie_gap_2030 = calories_supply_total_2030-calories_demand_2030, # gap = negative
-                        calorie_gap_2015 = calories_supply_total_2015-calories_demand_2015) # excess supply = positive
+                        calorie_gap_2030 = calories_demand_2030-calories_supply_total_2030, # gap = negative
+                        calorie_gap_2015 = calories_demand_2015-calories_supply_total_2015) # excess supply = positive
                # how many and which countries to plot this for?
                # those who were secure and now become insecure?
                # all of those that are insecure?
                
              }),
-  # bar chart
+  # only select 42 countries that were secure and will become insecure
+  tar_target(countries_becoming_insecure,
+             {
+    change_in_pou_rate %>% 
+                 filter(FI_status_change=="become insecure") %>% 
+                 dplyr::select("Country.x", "ISO_A3")
+  }),
+  # plot
   tar_target(plot_calorie_gap_decomposed,
              {
                data <- change_in_calories %>% 
                  dplyr::select(!c("name","calories_supply_total_2015","calories_demand_2015")) %>% 
-                 filter(calorie_gap_2030<0) %>% 
+                 filter(
+                        ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
                  pivot_longer(.,
                               c("calorie_gap_2030",
                                 "calorie_gap_2015",
@@ -1050,13 +1060,138 @@ targets_food_security <- list(
                  mutate(calories_billions=calories/10^9) %>% 
                  filter(!measure %in% c("calories_demand_2030",
                                         "calories_supply_total_2030"))
+                        
                
                ggplot(data %>% 
                         dplyr::select(c(ISO_A3, measure,calories_billions)), 
-                      aes(measure, calories_billions))+
+                      aes(measure, calories_billions,fill=measure))+
                  geom_bar(stat="identity")+
-                 facet_wrap(~ISO_A3)
+                 facet_wrap(~ISO_A3) +
+                 theme(axis.text.x = element_blank())+
+                 scale_fill_discrete(
+                   limits=c("calorie_gap_2015",
+                            "calorie_gap_2030",
+                            "change_demand_calories",
+                            "change_supply_calories"),
+                   labels=c(
+                     "Demand - Supply, 2015",
+                     "Demand - Supply, 2030",
+                     "Change in demand (popn.)",
+                     "Change in supply (prodn.)"
+                   ),
+                   name="Measure"
+                 ) +
+                 scale_y_continuous(name="Calories (billions)")
+               
+               ggsave("results/figures/food security/calorie_gap_decomposed.png")
+                
+             }),
+  # repeat but in terms of # of hungry people or in terms of hungry people/population
+  # have to join this data with population data and mder data
+  tar_target(plot_pou_change_decomposed,
+             {
+               data <- change_in_calories %>% 
+                 dplyr::select(!c("name")) %>% 
+                 mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
+                        pou_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
+                        change_demand_pou=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
+                        change_supply_pou=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
+                 filter(
+                        ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
+                 pivot_longer(.,
+                              c("pou_gap_2030",
+                                "pou_gap_2015",
+                                "change_demand_pou",
+                                "change_supply_pou",),
+                              names_to="measure",
+                              values_to="PoU") 
+               
+               data$measure <- factor(data$measure,
+                                      levels=c("pou_gap_2015",
+                                               "pou_gap_2030",
+                                               "change_demand_pou",
+                                               "change_supply_pou"))
+               
+               lbls=c(
+                 "Demand - Supply, 2015",
+                 "Demand - Supply, 2030",
+                 "Change in demand",
+                 "Change in supply"
+               )
+               
+               ggplot(data %>% 
+                        dplyr::select(c(ISO_A3, measure,PoU)), 
+                      aes(measure, PoU,fill=measure))+
+                 geom_bar(stat="identity")+
+                 facet_wrap(~ISO_A3) +
+                 theme(axis.text.x = element_blank(),
+                       legend.position = "right")+
+                 scale_fill_discrete(
+                   limits=c("pou_gap_2015",
+                            "pou_gap_2030",
+                            "change_demand_pou",
+                            "change_supply_pou"),
+                   labels=str_wrap(lbls, 10),
+                   name="Measure"
+                 ) +
+                 scale_y_continuous(name="Persons / Population")
                  
+               
+              ggsave("results/figures/food security/pou_change_decomposed.png")
+               
+             }),
+  # in terms of hungry persons
+  tar_target(plot_persons_change_decomposed,
+             {
+               data <- change_in_calories %>% 
+                 dplyr::select(!c("name")) %>% 
+                 mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020,
+                        pou_gap_2015=calorie_gap_2015/mder_annual_2015,
+                        change_demand_pou=change_demand_calories/mder_annual_2020, # instead of 2015/2015?
+                        change_supply_pou=change_supply_calories/mder_annual_2020) %>% 
+                 filter(
+                        ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
+                 pivot_longer(.,
+                              c("pou_gap_2030",
+                                "pou_gap_2015",
+                                "change_demand_pou",
+                                "change_supply_pou",),
+                              names_to="measure",
+                              values_to="persons") %>% 
+                 mutate(persons_millions = persons/10^6)
+               
+               data$measure <- factor(data$measure,
+                                      levels=c("pou_gap_2015",
+                                               "pou_gap_2030",
+                                               "change_demand_pou",
+                                               "change_supply_pou"))
+               
+               lbls=c(
+                 "Demand - Supply, 2015",
+                 "Demand - Supply, 2030",
+                 "Change in demand",
+                 "Change in supply"
+               )
+               
+               ggplot(data %>% 
+                        dplyr::select(c(ISO_A3, measure,persons_millions)), 
+                      aes(measure, persons_millions,fill=measure))+
+                 geom_bar(stat="identity")+
+                 facet_wrap(~ISO_A3) +
+                 theme(axis.text.x = element_blank(),
+                       legend.position = "right")+
+                 scale_fill_discrete(
+                   limits=c("pou_gap_2015",
+                            "pou_gap_2030",
+                            "change_demand_pou",
+                            "change_supply_pou"),
+                   labels=str_wrap(lbls, 10),
+                   name="Measure"
+                 ) +
+                 scale_y_continuous(name="Persons (millions)")
+               
+               
+               ggsave("results/figures/food security/persons_change_decomposed.png")
+               
              })
-  
 )
