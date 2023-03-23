@@ -932,6 +932,15 @@ targets_food_security <- list(
              
              
              }),
+  # count frequ
+  tar_target(freq_FI_status_change,
+             {
+               lvls <- unique(unlist(change_in_pou_rate$FI_status_change))
+               
+               freq <- sapply(change_in_pou_rate,
+                              function(x) table(factor(x, levels = lvls,
+                                                       ordered=TRUE)))
+             }),
   # heat map of just the four categorical variables of FI status change
   tar_target(plot_FI_status_change,
              {
@@ -947,8 +956,107 @@ targets_food_security <- list(
                  tmap::tm_shape(World) +
                  tmap::tm_borders("grey", lwd =1) 
                
-               tmap::tmap_save(plot, filename="results/figures/change_in_FI_status.png", height=4, width=10, asp=0)
+               tmap::tmap_save(plot, filename="results/figures/food security/change_in_FI_status.png", height=4, width=10, asp=0)
                plot
+             }),
+  # heat map of change in PoU rate 
+  # increase in the proportion of food insecure persons (as a percentage point increase)
+  tar_target(plot_pou_rate_change_capped,
+             {data <- change_in_pou_rate %>% 
+                 # disregard food excess supply (net exporting countries) as the focus is on food security
+                 # the minimum pou rate is 0
+                 mutate(pou_rate_2015=ifelse(pou_rate_2015<0, 0, pou_rate_2015),
+                        pou_rate_2030=ifelse(pou_rate_2030<0, 0, pou_rate_2030),
+                        pou_rate_change=pou_rate_2030-pou_rate_2015)
+             
+             dat <- World %>% left_join(data, by=c("iso_a2"="iso2"))
+             
+             plot <- tmap::tm_shape(dat) +
+               tm_fill("pou_rate_change",
+                       #palette = rev(hcl.colors(7,"RdYlGn")),
+                       #palette=c("YlOrBr"),
+                       palette=c("yellowgreen","lightyellow","khaki1","orange","red3","brown"),
+                       midpoint=NA,
+                       title= '2015 to 2021-2040') +
+               tmap::tm_shape(World) +
+               tmap::tm_borders("grey", lwd =1) 
+             
+             tmap::tmap_save(plot, filename="results/figures/food security/pou_rate_change_capped.png", height=4, width=10, asp=0)
+             plot
+               # 
+             }),
+  # uncapping food excess supply changes
+  tar_target(plot_pou_rate_change_uncapped,
+             {data <- change_in_pou_rate %>% 
+               # disregard food excess supply (net exporting countries) as the focus is on food security
+               # the minimum pou rate is 0
+               mutate(
+                      pou_rate_change=(pou_rate_2030-pou_rate_2015)/pou_rate_2015)
+             
+             dat <- World %>% left_join(data, by=c("iso_a2"="iso2"))
+             
+             plot <- tmap::tm_shape(dat) +
+               tm_fill("pou_rate_change",
+                       palette = rev(hcl.colors(7,"RdYlGn")),
+                       midpoint=NA,
+                       title= '2015 to 2021-2040') +
+               tmap::tm_shape(World) +
+               tmap::tm_borders("grey", lwd =1) 
+             
+             tmap::tmap_save(plot, filename="results/figures/food security/pou_rate_change_uncapped.png", height=4, width=10, asp=0)
+             plot
+             # 
+             }),
+  # ccalculate change in calories from population growth and production
+  tar_target(change_in_calories,
+             {
+               future <- pou_by_country %>% 
+                 dplyr::select(c("Country", "ISO_A3","calories_demand","calories_supply_total")) %>% 
+                 rename(calories_demand_2030=calories_demand,
+                        calories_supply_total_2030=calories_supply_total) 
+               
+               baseline <- baseline_2015_total_calories %>% 
+                 dplyr::select(c("ISO_A3", "calories_supply_total_gaez", "calories_demand")) %>% 
+                 rename(calories_supply_total_2015 = calories_supply_total_gaez,
+                        calories_demand_2015 = calories_demand) 
+               
+               data <- baseline %>% left_join(future,
+                                              by=c("ISO_A3")) %>% 
+                 rowwise() %>% 
+                 mutate(change_demand_calories = calories_demand_2030-calories_demand_2015,
+                        change_supply_calories = calories_supply_total_2030-calories_supply_total_2015,
+                        calorie_gap_2030 = calories_supply_total_2030-calories_demand_2030, # gap = negative
+                        calorie_gap_2015 = calories_supply_total_2015-calories_demand_2015) # excess supply = positive
+               # how many and which countries to plot this for?
+               # those who were secure and now become insecure?
+               # all of those that are insecure?
+               
+             }),
+  # bar chart
+  tar_target(plot_calorie_gap_decomposed,
+             {
+               data <- change_in_calories %>% 
+                 dplyr::select(!c("name","calories_supply_total_2015","calories_demand_2015")) %>% 
+                 filter(calorie_gap_2030<0) %>% 
+                 pivot_longer(.,
+                              c("calorie_gap_2030",
+                                "calorie_gap_2015",
+                                "change_demand_calories",
+                                "change_supply_calories",
+                                "calories_demand_2030",
+                                "calories_supply_total_2030"),
+               names_to="measure",
+               values_to="calories") %>% 
+                 mutate(calories_billions=calories/10^9) %>% 
+                 filter(!measure %in% c("calories_demand_2030",
+                                        "calories_supply_total_2030"))
+               
+               ggplot(data %>% 
+                        dplyr::select(c(ISO_A3, measure,calories_billions)), 
+                      aes(measure, calories_billions))+
+                 geom_bar(stat="identity")+
+                 facet_wrap(~ISO_A3)
+                 
              })
   
 )
