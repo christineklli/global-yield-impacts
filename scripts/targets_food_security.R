@@ -764,13 +764,157 @@ targets_food_security <- list(
                  summarise(total_food_calories=sum(food_calories, na.rm=T)) %>% 
                  mutate(total_calories = total_food_calories/0.6417) # from tilman; maize+rice+soy+wheat=0.6417 (not including feed)
              }),
+  tar_target(fao_all_products_kcal,
+             {
+               read_csv("data/Food security data/FAOSTAT_data_en_3-24-2023_kcal.csv")
+             }),
+  tar_target(fao_staple_share,
+             {
+               data <- fao_all_products_kcal %>% 
+                 left_join(dplyr::select(world_bank_country_list,
+                                         Economy,
+                                         `Income group`),
+                           by=c("Area"="Economy")) %>% 
+                 left_join(grazing_income_group,
+                           by=c("Income group","Item")) %>% 
+                 mutate(Value_adj = case_when(
+                   !is.na(grazing_prop) ~ Value*(1-grazing_prop),
+                   is.na(grazing_prop) ~ Value
+                 )) %>% 
+                 dplyr::select(Area, Item, Element, Year, Value_adj) %>% 
+                 group_by(Area,Item) %>% 
+                 # sum across years
+                 summarise(Value_adj=sum(Value_adj,na.rm=T)) %>% 
+                 mutate(sum_total_items=sum(Value_adj, na.rm=T)) %>% 
+                            # then filter for only the products of interest
+                              filter(Item %in% c(
+                                "Maize and products",
+                                "Rice and products",
+                                "Soyabeans",
+                                "Wheat and products",
+                                "Bovine Meat",
+                                "Pigmeat",
+                                "Poultry Meat",
+                                "Eggs",
+                                "Milk - Excluding Butter"
+                              )) %>%
+                            # summarise new column sum of these products
+                            # then mutate another column to calculate the share for each country
+                            mutate(sum_staple_items = sum(Value_adj, na.rm=T)) %>%
+                              summarise(sum_staple_items=sum(sum_staple_items),
+                                        sum_total_items=sum(sum_total_items,na.rm=T),
+                                        staple_item_share=sum_staple_items/sum_total_items) %>%
+                              left_join(fao_iso2,by=c("Area"="name"))
+               
+               # check global staple share, should be close to 0.64 from Tilman 2011
+               # data %>% 
+               #                  summarise(sum_staple_items=sum(sum_staple_items),
+               #                            sum_total_items=sum(sum_total_items),
+               #                            staple_item_share=sum_staple_items/sum_total_items)
+               # 0.571, this is closer to 0.64; could be lower because we look at 186 countries
+               # rather than 100 countries as in Tilman
+               # and the staple share may be lower in the remaining 86 countries?
+               
+               data
+               
+             }),
+  
+  
+  # calculate calories represented as a share of total calories using FAO FBS data on production + imports
+  # tar_target(fao_share_all_products,
+  #            {
+  #              read_csv(
+  #                "data/Food security data/FAOSTAT_data_en_3-24-2023_FBS_all_products_201820.csv"
+  #              )
+  #            }),
+  # tar_target(fao_staple_share_by_country,
+  #            {
+  #              data <- fao_share_all_products %>% 
+  #                left_join(dplyr::select(world_bank_country_list,
+  #                                        Economy,
+  #                                        `Income group`),
+  #                          by=c("Area"="Economy")) %>% 
+  #                left_join(grazing_income_group,
+  #                          by=c("Income group", "Item")) %>% 
+  #                mutate(Value_adj = case_when(
+  #                  !is.na(grazing_prop) & Element == "Production" ~ Value*(1-grazing_prop),
+  #                  !is.na(grazing_prop) & Element != "Production" ~ Value,
+  #                  is.na(grazing_prop) ~ Value)) %>% 
+  #                dplyr::select(Area, Item, Element, Year, Value_adj) %>% 
+  #                filter(Element %in% c("Production", "Import Quantity")) %>% 
+  #                group_by(Area,Item) %>%
+  #                summarise(Value_adj = sum(Value_adj, na.rm=T)) 
+  #              #^ this is the sum of produced + imported quantity per country per item
+  #              
+  #                # convert to feed and food calories 
+  #              crop_alloc <- fao_share_all_products %>% 
+  #                left_join(fao_share_all_products %>% 
+  #                            filter(Element == "Domestic supply quantity") %>% 
+  #                            dplyr::select(Value,Area,Item,Year),
+  #                          by = c("Area","Item","Year"),
+  #                          suffix = c('','_group')) %>% 
+  #                filter(Element %in% c("Feed", "Food")) %>% 
+  #                # summarise across years
+  #                group_by(Area, Element, Item) %>% 
+  #                summarise(# value_group = Domestic supply quantity
+  #                       Prop = sum(Value,na.rm=T) / sum(Value_group,na.rm=T)) %>% 
+  #                dplyr::select(Area,Element,Item,Prop, Value, Value_group)
+  #              
+  #              # note this is odd - some commodities have negative domestic supply quantity
+  #              # eg beans and cereal for Afghanistan
+  #              # such that feed/food > domestic supply quantity
+  #              # trade deficit for these crops?
+  #                
+  #                # need calorie conversion for all 99 unique items
+  #                
+  #                
+  #                # group by country
+  #                # summarise across years and element (production + imports) first
+  #               group_by(Area,Item) %>%
+  #                summarise(Value_adj = sum(Value_adj, na.rm=T)) %>% 
+  #                # mutate column which is the sum of all products, by country
+  #                mutate(sum_total_items=sum(Value_adj, na.rm=T)) %>% 
+  #              # then filter for only the products of interest 
+  #                filter(Item %in% c(
+  #                  "Maize and products",
+  #                  "Rice and products",
+  #                  "Soyabeans",
+  #                  "Wheat and products",
+  #                  "Bovine Meat",
+  #                  "Pigmeat",
+  #                  "Poultry Meat",
+  #                  "Eggs",
+  #                  "Milk - Excluding Butter"
+  #                )) %>% 
+  #              # summarise new column sum of these products
+  #              # then mutate another column to calculate the share for each country
+  #              mutate(sum_staple_items = sum(Value_adj, na.rm=T)) %>% 
+  #                summarise(sum_staple_items=sum(sum_staple_items),
+  #                          sum_total_items=sum(sum_total_items,na.rm=T), 
+  #                          staple_item_share=sum_staple_items/sum_total_items) %>% 
+  #                left_join(fao_iso2,by=c("Area"="name"))
+  #              
+  #              
+  #              # also do checks on global share
+  #              data %>% 
+  #                summarise(sum_staple_items=sum(sum_staple_items),
+  #                          sum_total_items=sum(sum_total_items),
+  #                          staple_item_share=sum_staple_items/sum_total_items)
+  #              # staple items share = 0.384; this is really low! much lower than the assumed 0.7 earlier
+  #                
+  #            }),
+  
   # calculate prevalence of undernourishment
   # (supply/0.7 - demand)/(mder per person per year) and /population
-  tar_target(pou_by_country,
+  tar_target(future_2030_total_calories,
              {future_food_gap %>% 
                  left_join(dplyr::select(country_pop_mder, Code, mder_annual_2020, pop_2021_2040), 
                            by = c("ISO_A3"="Code")) %>% 
-                 mutate(calories_supply_total = calories_supply/0.7,
+                 # left_join(dplyr::select(fao_staple_share, iso2, staple_item_share),
+                 #           by=c("iso2")) %>% # this line is new
+                 mutate(
+                   #calories_supply_total = calories_supply / staple_item_share, # this line is new
+                   calories_supply_total = calories_supply/0.7,
                         food_insecure_persons = (calories_demand - calories_supply_total)/mder_annual_2020,
                         pou_rate = food_insecure_persons/pop_2021_2040) %>% 
                  filter(ISO_A3 != "Ashm")
@@ -879,7 +1023,7 @@ targets_food_security <- list(
   tar_target(baseline_2015_total_calories,
              {# only 145 countries
                baseline_2015_calories_by_crop %>% 
-                 group_by(name,ISO_A3) %>% 
+                 group_by(name,ISO_A3,iso_a2) %>% 
                  summarise(total_calories_gaez=sum(total_calories_gaez,na.rm=T),
                            total_calories_fao=sum(total_calories_fao,na.rm=T)) %>% 
                  left_join(dplyr::select(
@@ -887,8 +1031,12 @@ targets_food_security <- list(
                    Code, mder_pop_annual_2015, mder_annual_2015, pop_2015), 
                    by = c("ISO_A3"="Code")) %>% 
                  rename(calories_demand=mder_pop_annual_2015) %>% 
-                 mutate(calories_supply_total_gaez = total_calories_gaez/0.7,
-                        calories_supply_total_fao = total_calories_fao/0.7,
+                 # left_join(dplyr::select(fao_staple_share, iso2, staple_item_share),
+                 #           by=c("iso_a2"="iso2")) %>% # this line is new
+                 mutate( calories_supply_total_gaez = total_calories_gaez/0.7,
+                         calories_supply_total_fao = total_calories_fao/0.7,
+                   # calories_supply_total_gaez = total_calories_gaez/staple_item_share, # /0.7
+                   #      calories_supply_total_fao = total_calories_fao/staple_item_share, # /0.7
                         food_insecure_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
                         pou_rate_gaez = food_insecure_persons_gaez/pop_2015,
                         food_insecure_persons_fao = (calories_demand - calories_supply_total_fao)/mder_annual_2015,
@@ -898,13 +1046,13 @@ targets_food_security <- list(
   ),
   # write out pou_rates future and present into csv
   tar_target(pou_by_country_future_csv,
-             write_csv(pou_by_country, "processed/pou_by_country_2021_2040.csv")),
+             write_csv(future_2030_total_calories, "processed/pou_by_country_2021_2040.csv")),
   tar_target(pou_by_country_baseline_csv,
              write_csv(baseline_2015_total_calories, "processed/pou_by_country_2015.csv")),
   
   # break down the difference between current production & future production
   tar_target(change_in_pou_rate,
-             {future <- pou_by_country %>% 
+             {future <- future_2030_total_calories %>% 
                dplyr::select(c("Country", "iso2","ISO_A3","calories_demand","calories_supply_total","pou_rate")) %>% 
                rename(calories_demand_2030=calories_demand,
                       calories_supply_total_2030=calories_supply_total,
@@ -951,7 +1099,8 @@ targets_food_security <- list(
                
                plot <- tmap::tm_shape(dat) +
                  tm_fill("FI_status_change",
-                         palette = c("orange", "lightgreen","red3","darkgreen"),
+                         #palette = c("orange", "red3","darkgreen","black"),
+                         palette=c("orange","lightgreen","red3","darkgreen"),
                          title= '2015 to 2021-2040') +
                  tmap::tm_shape(World) +
                  tmap::tm_borders("grey", lwd =1) 
@@ -973,10 +1122,11 @@ targets_food_security <- list(
              
              plot <- tmap::tm_shape(dat) +
                tm_fill("pou_rate_change",
-                       #palette = rev(hcl.colors(7,"RdYlGn")),
-                       #palette=c("YlOrBr"),
-                       palette=c("yellowgreen","lightyellow","khaki1","orange","red3","brown"),
-                       midpoint=NA,
+                       palette=c("yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
+                       
+                  #     palette=c("darkgreen", "yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
+                     #  breaks=c(-1.0,-0.8,-0.6,-0.4,-0.2, 0, 0.2,0.4,0.6,0.8, 1.0),
+                       midpoint=0,
                        title= '2015 to 2021-2040') +
                tmap::tm_shape(World) +
                tmap::tm_borders("grey", lwd =1) 
@@ -1010,7 +1160,7 @@ targets_food_security <- list(
   # ccalculate change in calories from population growth and production
   tar_target(change_in_calories,
              {
-               future <- pou_by_country %>% 
+               future <- future_2030_total_calories %>% 
                  dplyr::select(c("Country", "ISO_A3","calories_demand","calories_supply_total",
                                  "mder_annual_2020","pop_2021_2040")) %>% 
                  rename(calories_demand_2030=calories_demand,
@@ -1042,7 +1192,7 @@ targets_food_security <- list(
                  dplyr::select("Country.x", "ISO_A3")
   }),
   # plot
-  tar_target(plot_calorie_gap_decomposed,
+  tar_target(plot_calorie_gap_decomposed_become_insecure,
              {
                data <- change_in_calories %>% 
                  dplyr::select(!c("name","calories_supply_total_2015","calories_demand_2015")) %>% 
@@ -1083,12 +1233,12 @@ targets_food_security <- list(
                  ) +
                  scale_y_continuous(name="Calories (billions)")
                
-               ggsave("results/figures/food security/calorie_gap_decomposed.png")
+               ggsave("results/figures/food security/calorie_gap_decomposed_become_insecure.png")
                 
              }),
   # repeat but in terms of # of hungry people or in terms of hungry people/population
   # have to join this data with population data and mder data
-  tar_target(plot_pou_change_decomposed,
+  tar_target(plot_pou_change_decomposed_become_insecure,
              {
                data <- change_in_calories %>% 
                  dplyr::select(!c("name")) %>% 
@@ -1137,11 +1287,11 @@ targets_food_security <- list(
                  scale_y_continuous(name="Persons / Population")
                  
                
-              ggsave("results/figures/food security/pou_change_decomposed.png")
+              ggsave("results/figures/food security/pou_change_decomposed_become_insecure.png")
                
              }),
   # in terms of hungry persons
-  tar_target(plot_persons_change_decomposed,
+  tar_target(plot_persons_change_decomposed_become_insecure,
              {
                data <- change_in_calories %>% 
                  dplyr::select(!c("name")) %>% 
@@ -1191,7 +1341,66 @@ targets_food_security <- list(
                  scale_y_continuous(name="Persons (millions)")
                
                
-               ggsave("results/figures/food security/persons_change_decomposed.png")
+               ggsave("results/figures/food security/persons_change_decomposed_become_insecure.png")
+               
+             }),
+  # sset of countries that remain insecure
+  tar_target(countries_remaining_insecure,
+             {
+               change_in_pou_rate %>% 
+                 filter(FI_status_change=="remain insecure") %>% 
+                 dplyr::select("Country.x", "ISO_A3")
+             }),
+  tar_target(plot_pou_change_decomposed_remain_insecure,
+             {
+               data <- change_in_calories %>% 
+                 dplyr::select(!c("name")) %>% 
+                 mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
+                        pou_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
+                        change_demand_pou=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
+                        change_supply_pou=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
+                 filter(
+                   ISO_A3 %in% countries_remaining_insecure$ISO_A3) %>% # outlier that is skewing the bars 
+                 pivot_longer(.,
+                              c("pou_gap_2030",
+                                "pou_gap_2015",
+                                "change_demand_pou",
+                                "change_supply_pou",),
+                              names_to="measure",
+                              values_to="PoU") 
+               
+               data$measure <- factor(data$measure,
+                                      levels=c("pou_gap_2015",
+                                               "pou_gap_2030",
+                                               "change_demand_pou",
+                                               "change_supply_pou"))
+               
+               lbls=c(
+                 "Demand - Supply, 2015",
+                 "Demand - Supply, 2030",
+                 "Change in demand",
+                 "Change in supply"
+               )
+               
+               ggplot(data %>% 
+                        dplyr::select(c(ISO_A3, measure,PoU)), 
+                      aes(measure, PoU,fill=measure))+
+                 geom_bar(stat="identity")+
+                 facet_wrap(~ISO_A3) +
+                 theme(axis.text.x = element_blank(),
+                       legend.position = "right")+
+                 scale_fill_discrete(
+                   limits=c("pou_gap_2015",
+                            "pou_gap_2030",
+                            "change_demand_pou",
+                            "change_supply_pou"),
+                   labels=str_wrap(lbls, 10),
+                   name="Measure"
+                 ) +
+                 scale_y_continuous(name="Persons / Population")
+               
+               
+               ggsave("results/figures/food security/pou_change_decomposed_remain_insecure.png")
                
              })
 )
