@@ -377,7 +377,7 @@ targets_food_security <- list(
   tar_target(fao_trade_export,
              {fao_trade_filtered %>% 
                  filter(Element=="Export Quantity") %>% 
-                 dplyr::select(`Reporter Countries`, `Partner Countries`, Item, Year, Value) %>%
+                 dplyr::select(`Reporter Countries`, `Partner Countries`, Item, Year, Value, `Reporter Country Code (M49)`) %>%
                  mutate(Exports_trade = Value/1000) %>%
                  dplyr::select(!c("Value")) %>% 
                  left_join(concord, by = c("Item"="trade_crops")) %>% 
@@ -385,13 +385,14 @@ targets_food_security <- list(
                    dplyr::select(
                      fao_crop_allocation_pct,
                      Area,
+                     `Area Code (M49)`,
                      Element,
                      Item,
                      Year,
                      Value,  
                      Prop), 
                    # # unlike previous fao_trade_alloc this joins by exporter
-                   by = c(`Reporter Countries`= "Area",
+                   by = c("Reporter Country Code (M49)" = "Area Code (M49)",
                           "alloc_crops"="Item",
                           "Year")) %>% 
                  dplyr::select(!c("Prop")) %>% 
@@ -399,21 +400,21 @@ targets_food_security <- list(
                  pivot_wider(names_from = Element,
                              values_from = Value)
              }),
-
+  
   # calculate total export proportion today
   tar_target(fao_trade_future,
              {# remember that export quantity doesn't vary by partner country
                # only by reporter country (it is from fao crop allocation data)
                fao_trade_export %>% 
-                 group_by(`Reporter Countries`, Item, alloc_crops, Year) %>% 
-                 summarise(Exports_total = mean(`Export Quantity`, na.rm=T),
-                           Production_total = mean(Production, na.rm=T),
-                           Exports_trade_total = sum(Exports_trade, na.rm=T), # as this is summing across exports to all countries for an exporting country 
+                 group_by(`Reporter Countries`, Item, alloc_crops, Year) %>%  # summarise across partner countries
+                 summarise(Exports_total = sum(`Export Quantity`, na.rm=T), # mean before
+                           Production_total = sum(Production, na.rm=T), # mean before
+                         #  Exports_trade_total = sum(Exports_trade, na.rm=T), # as this is summing across exports to all countries for an exporting country 
                            Exports.total.prop = Exports_total/Production_total) %>% 
                  # average over years
                  group_by(`Reporter Countries`, Item, alloc_crops) %>% 
                  summarise(Exports_alloc_total = sum(Exports_total, na.rm=T), # export column from alloc dataset
-                           Exports_trade_total = sum(Exports_trade_total, na.rm=T), # export column from trade dataset
+                         #  Exports_trade_total = sum(Exports_trade_total, na.rm=T), # export column from trade dataset
                            Production_total = sum(Production_total, na.rm=T), # production column from alloc dataset
                            Exports.alloc.total.prop = Exports_alloc_total/Production_total) %>% 
                  relocate(`Reporter Countries`, Item, alloc_crops, Exports.alloc.total.prop, Production_total)
@@ -431,22 +432,35 @@ targets_food_security <- list(
                  ), by = "crop")}),
   
   # left join to future yield production by Reporter Countries = Country and crops
-  tar_target(fao_trade_future_exports,
+  tar_target(fao_trade_exports,
              
              {
                fao_trade_future %>% 
                  left_join(fao_iso2,by=c("Reporter Countries"="name")) %>% 
                  left_join(country_production_2021_2040_df, 
                            by=c("iso2" = "iso_a2", "alloc_crops")) %>% 
+                 rename(crop_no=crop) %>% 
+                 left_join(data.frame(crop_no=c(1:4),crop=crops)) %>% 
+                 # add baseline exports as well to calculate baseline imports
+                 left_join(dplyr::select(country_baseline_future_production_df, # using GAEZ production data
+                                         iso_a2,
+                                         crop,
+                                         production_2015_gaez,
+                                         production_2015_fao  # check export calc methodology using FAO production data
+                                         ),
+                           by=c("iso2" = "iso_a2", "crop")) %>% 
+                 # check export calc methodology using FAO production data
+                 
                  # multiply export.prop by future production for total future exports
-                 mutate(exports_future = Exports.alloc.total.prop * production)
+                 mutate(exports_future = Exports.alloc.total.prop * production,
+                        exports_baseline = Exports.alloc.total.prop * production_2015_gaez,
+                        exports_fao = Exports.alloc.total.prop * production_2015_fao)
              }),
-
+  
   
   # # calculate export prop by partner
   
-  
-  tar_target(fao_trade_future_partners,
+  tar_target(fao_trade_partners,
              {# start with trade matrix data
                x <- fao_trade_filtered %>% 
                  filter(Element=="Export Quantity") %>% 
@@ -469,26 +483,47 @@ targets_food_security <- list(
                  # calculate importer-share of total exports by importer/exporter pair (sum-years importer only /sum-years total)
                  mutate(partner_export_share = sum_exports_partner/sum_exports_total) %>% 
                  # calculate future exports by importer/exporter pair (importer-share * total future exports of each exporter)
-                 left_join(dplyr::select(fao_trade_future_exports,
+                 left_join(dplyr::select(fao_trade_exports,
                                          `Reporter Countries`,
                                          Item,
-                                         exports_future), 
+                                         exports_future,
+                                         exports_baseline,
+                                         exports_fao), 
                            by = c("Reporter Countries", "Item")) %>% 
-                 mutate(partner_exports_future = exports_future * partner_export_share)   # expressed in tons
+                 mutate(partner_exports_future = exports_future * partner_export_share,
+                        partner_exports_baseline = exports_baseline * partner_export_share,
+                        partner_exports_fao = exports_fao * partner_export_share)   # expressed in tons
                
              }),
   # calculate future imports for each country (sum of exports across all export partners)
   
-  tar_target(fao_trade_future_imports,
-             fao_trade_future_partners %>% 
+  tar_target(fao_trade_imports,
+             fao_trade_partners %>% 
                group_by(`Partner Countries`, Item) %>% 
-               summarise(imports_future = sum(partner_exports_future, na.rm=T))),   # expressed in tons
+               summarise(imports_future = sum(partner_exports_future, na.rm=T),
+             imports_baseline = sum(partner_exports_baseline, na.rm=T),
+             imports_fao = sum(partner_exports_fao, na.rm=T)) %>% 
+               left_join(fao_iso2, by=c("Partner Countries"="name"))
+             ),   # expressed in tons
+  
+  
+  # check and compare baseline estimated/imputed imports/exports and FAO imports/exports
+  tar_target(baseline_import_export_checks,
+             {
+               fao_import_export_2015 %>% 
+                 left_join(concord, by=c("Item"="alloc_crops")) %>% 
+                 left_join(dplyr::select(fao_trade_imports, iso2, imports_baseline, imports_fao, Item), by=c("iso2", "trade_crops"="Item")) %>% 
+                 left_join(dplyr::select(fao_trade_exports, iso2, exports_baseline, exports_fao, alloc_crops), by=c("iso2", "Item"="alloc_crops"))
+               # actuals are imports_2015 and exports_2015, estimates are imports_baseline and exports_baseline
+               # they should be near identical!
+             }),
+  
   
   # sum future production and imports
   tar_target(fao_future_food_supply,
-             {fao_trade_future_imports %>% 
+             {fao_trade_imports %>% 
                  left_join(dplyr::select(
-                   fao_trade_future_exports,
+                   fao_trade_exports,
                    `Reporter Countries`,
                    Item,
                    production,
@@ -741,41 +776,41 @@ targets_food_security <- list(
                group_by(Area) %>% 
                summarise(sum_total_items=sum(Value_adj, na.rm=T)) %>% 
                left_join(fao_iso2, by=c("Area"="name"))
-                    
              
-               data %>% 
-                 # sum_total_items
-                 left_join(dplyr::select(
-                   baseline_2015_total_calories,
-                   iso_a2,
-                   calories_supply_total_gaez),
-                   by=c("iso2"="iso_a2")) %>% 
-                 mutate(fao_total_calories=sum_total_items*10^6) %>% 
-                 dplyr::select(Area,iso2, fao_total_calories, calories_supply_total_gaez)
-               
+             
+             data %>% 
+               # sum_total_items
+               left_join(dplyr::select(
+                 baseline_2015_total_calories,
+                 iso_a2,
+                 calories_supply_total_gaez),
+                 by=c("iso2"="iso_a2")) %>% 
+               mutate(fao_total_calories=sum_total_items*10^6) %>% 
+               dplyr::select(Area,iso2, fao_total_calories, calories_supply_total_gaez)
+             
              }),
   
   # check calorie gap by country if using FAO calorie supply data
   tar_target(comparison_2015_calorie_gap,
              {data <- comparison_2015_calories_by_country %>% 
-                 left_join(dplyr::select(
-                   as.data.frame(worldmap_clean),
-                   ISO_A2, ISO_A3), by=c("iso2"="ISO_A2")) %>% 
+               left_join(dplyr::select(
+                 as.data.frame(worldmap_clean),
+                 ISO_A2, ISO_A3), by=c("iso2"="ISO_A2")) %>% 
                left_join(dplyr::select(
                  country_pop_mder_2015, 
                  Code, mder_pop_annual_2015, mder_annual_2015, pop_2015), 
                  by = c("ISO_A3"="Code")) %>% 
-                 rename(calories_demand=mder_pop_annual_2015) %>% 
-                 mutate( 
-                  food_insecure_persons_fao = (calories_demand - fao_total_calories)/mder_annual_2015,
-                   food_insecure_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
-                  pou_rate_fao = food_insecure_persons_fao/pop_2015,
-                   pou_rate_gaez = food_insecure_persons_gaez/pop_2015) %>% 
-                 filter(ISO_A3 != "Ashm") %>% 
-                 dplyr::select(Area, iso2, fao_total_calories, calories_supply_total_gaez, calories_demand, pou_rate_fao, pou_rate_gaez) 
-                 
-               data %>% write_csv("results/tables/comparison_2015_calorie_gap.csv")
-               data
+               rename(calories_demand=mder_pop_annual_2015) %>% 
+               mutate( 
+                 food_insecure_persons_fao = (calories_demand - fao_total_calories)/mder_annual_2015,
+                 food_insecure_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
+                 pou_rate_fao = food_insecure_persons_fao/pop_2015,
+                 pou_rate_gaez = food_insecure_persons_gaez/pop_2015) %>% 
+               filter(ISO_A3 != "Ashm") %>% 
+               dplyr::select(Area, iso2, ISO_A3, fao_total_calories, calories_supply_total_gaez, calories_demand, pou_rate_fao, pou_rate_gaez) 
+             
+             data %>% write_csv("results/tables/comparison_2015_calorie_gap.csv")
+             data
              }),
   
   
@@ -816,17 +851,17 @@ targets_food_security <- list(
                            total_production_2015_fao=sum(production_2015_fao,na.rm=T))
              }),
   # read in import quantities from 2014-2016 of crops from FAO by country from FBS
-
+  # 
   tar_target(fao_import_export_2015,
              {
                fao_crop_allocation_data %>%
                  filter(Element %in% c("Import Quantity",
-                                       "Export Quantity")) %>% 
-                 group_by(Area, Item, Element) %>% 
+                                       "Export Quantity")) %>%
+                 group_by(Area, Item, Element) %>% # summarise across years
                  summarise(mean_value = mean(Value, na.rm=T)*1000) %>% # expressed in tons
-                 pivot_wider(., names_from=Element, values_from=mean_value) %>% 
+                 pivot_wider(., names_from=Element, values_from=mean_value) %>%
                  rename(exports_2015 = `Export Quantity`,
-                        imports_2015 = `Import Quantity`) %>% 
+                        imports_2015 = `Import Quantity`) %>%
                  left_join(fao_iso2, by=c("Area"="name"))
              }),
 
@@ -839,14 +874,28 @@ targets_food_security <- list(
                                                                 "Soyabeans",
                                                                 "Wheat and products"))) %>% 
                  
-                 left_join(dplyr::select(fao_crop_allocation_multiyear, iso2, Item, Element, Prop), 
+                 left_join(dplyr::select(fao_crop_allocation_multiyear, Area, iso2, Item, Element, Prop), 
                            by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
                  filter(Element %in% c("Feed", "Food")) %>% 
                  left_join(dplyr::select(fao_country_feed_calories, feed_conversion, iso2), by=c("iso_a2"="iso2")) %>% 
                  left_join(crop_calorie_conversion, by=c("alloc_crops")) %>% # need to left join import quantities in 2015 from FAO
-                 left_join(fao_import_export_2015,
-                           by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
-                 dplyr::select(!c("alloc_crops", "pct_change", "production_2021_2040", "Area.x", "Area.y")) %>% 
+                 # left_join(fao_import_export_2015,
+                 #           by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
+                 left_join(dplyr::select(fao_trade_imports,
+                                         iso2,
+                                         Item,
+                                         imports_baseline),
+                                         
+                           by=c("iso_a2"="iso2", "Item")) %>% # we have lost 177-160 = 17 countries here?
+                 rename(imports_2015 = imports_baseline) %>% 
+                 left_join(dplyr::select(fao_trade_exports,
+                                         iso2,
+                                         Item,
+                                         exports_baseline),
+                           by=c("iso_a2"="iso2", "Item")) %>% 
+                 rename(exports_2015 = exports_baseline) %>% 
+                 
+                 dplyr::select(!c("Area", "alloc_crops", "pct_change", "production_2021_2040")) %>% 
                  mutate(imports_2015 = ifelse(
                    is.na(imports_2015) | is.infinite(imports_2015), 0, imports_2015),
                    production_2015_gaez = ifelse(
@@ -1000,7 +1049,7 @@ targets_food_security <- list(
              
              plot <- tmap::tm_shape(dat) +
                tm_fill("pou_rate_change",
-                       palette=c("yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
+                       palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
                        
                        #   palette=c("darkgreen", "yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
                        breaks=c(-1.0,-0.8,-0.6,-0.4,-0.2, 0, 0.2,0.4,0.6,0.8, 1.0),
@@ -1052,11 +1101,17 @@ targets_food_security <- list(
                
                data <- baseline %>% left_join(future,
                                               by=c("ISO_A3")) %>% 
+                 left_join(dplyr::select(comparison_2015_calorie_gap,
+                                         Area,
+                                         ISO_A3,
+                                         fao_total_calories),
+                           by=c("ISO_A3")) %>% 
                  rowwise() %>% 
                  mutate(change_demand_calories = calories_demand_2030-calories_demand_2015,
                         change_supply_calories = calories_supply_total_2030-calories_supply_total_2015,
                         calorie_gap_2030 = calories_demand_2030-calories_supply_total_2030, # gap = negative
-                        calorie_gap_2015 = calories_demand_2015-calories_supply_total_2015) # excess supply = positive
+                        calorie_gap_2015 = calories_demand_2015-calories_supply_total_2015, # excess supply = positive
+                        calorie_gap_2015_fao = calories_demand_2015-fao_total_calories) 
                # how many and which countries to plot this for?
                # those who were secure and now become insecure?
                # all of those that are insecure?
@@ -1090,9 +1145,9 @@ targets_food_security <- list(
                                         "calories_supply_total_2030"))
                
                
-               ggplot(data %>% 
-                        dplyr::select(c(ISO_A3, measure,calories_billions)), 
-                      aes(measure, calories_billions,fill=measure))+
+               plot <- ggplot(data %>% 
+                                dplyr::select(c(ISO_A3, measure,calories_billions)), 
+                              aes(measure, calories_billions,fill=measure))+
                  geom_bar(stat="identity")+
                  facet_wrap(~ISO_A3) +
                  theme(axis.text.x = element_blank())+
@@ -1111,8 +1166,9 @@ targets_food_security <- list(
                  ) +
                  scale_y_continuous(name="Calories (billions)")
                
+               plot
                ggsave("results/figures/food security/calorie_gap_decomposed_become_insecure.png")
-               
+               plot
              }),
   # repeat but in terms of # of hungry people or in terms of hungry people/population
   # have to join this data with population data and mder data
@@ -1122,6 +1178,7 @@ targets_food_security <- list(
                  dplyr::select(!c("name")) %>% 
                  mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
                         pou_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
+                        pou_gap_2015_fao=calorie_gap_2015_fao/mder_annual_2015/pop_2015,
                         change_demand_pou=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
                         change_supply_pou=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
                  filter(
@@ -1129,33 +1186,37 @@ targets_food_security <- list(
                  pivot_longer(.,
                               c("pou_gap_2030",
                                 "pou_gap_2015",
+                                "pou_gap_2015_fao",
                                 "change_demand_pou",
                                 "change_supply_pou",),
                               names_to="measure",
                               values_to="PoU") 
                
                data$measure <- factor(data$measure,
-                                      levels=c("pou_gap_2015",
+                                      levels=c("pou_gap_2015_fao",
+                                               "pou_gap_2015",
                                                "pou_gap_2030",
                                                "change_demand_pou",
                                                "change_supply_pou"))
                
                lbls=c(
+                 "Demand - Supply FAO, 2015",
                  "Demand - Supply, 2015",
                  "Demand - Supply, 2030",
                  "Change in demand",
                  "Change in supply"
                )
                
-               ggplot(data %>% 
-                        dplyr::select(c(ISO_A3, measure,PoU)), 
-                      aes(measure, PoU,fill=measure))+
+               plot <- ggplot(data %>% 
+                                dplyr::select(c(ISO_A3, measure,PoU)), 
+                              aes(measure, PoU,fill=measure))+
                  geom_bar(stat="identity")+
                  facet_wrap(~ISO_A3) +
                  theme(axis.text.x = element_blank(),
                        legend.position = "right")+
                  scale_fill_discrete(
-                   limits=c("pou_gap_2015",
+                   limits=c("pou_gap_2015_fao",
+                            "pou_gap_2015",
                             "pou_gap_2030",
                             "change_demand_pou",
                             "change_supply_pou"),
@@ -1164,9 +1225,9 @@ targets_food_security <- list(
                  ) +
                  scale_y_continuous(name="Persons / Population")
                
-               
+               plot
                ggsave("results/figures/food security/pou_change_decomposed_become_insecure.png")
-               
+               plot
              }),
   # in terms of hungry persons
   tar_target(plot_persons_change_decomposed_become_insecure,
