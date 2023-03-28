@@ -41,7 +41,7 @@ calc_country_mder <- function(mder_data, pop_data){
 }
 
 format_predictions <- function(predictions){
-  df <- adj_predictions_by_time_period %>% 
+  df <- predictions %>% 
     filter(model=="glm_RS" & time_period=="2021-2040") %>% 
     dplyr::select(c("lon","lat","pred_bar", "crop_pooled")) 
   
@@ -89,11 +89,12 @@ read_iso2_correspondance <- function(file){
 
 check_baseline_production <- function(fao_production, grogan_production){
   fao <- fao_production %>%  
-    dplyr::select(Area, Item, Value, Year) %>% # units are in tons
-    group_by(Area, Item) %>% 
+    dplyr::select(Area, `Area Code (ISO2)`, Item, `Item Code (CPC)`, Value, Year) %>% # units are in 1000 tons
+    group_by(Area, `Area Code (ISO2)`, Item, `Item Code (CPC)`) %>% 
     summarise(Value_fao = mean(Value, na.rm=T)) %>% # average over 2014-2016 for mean production centred around 2015
-    arrange(Item) %>%  # sort crops alphabetically
-    left_join(fao_iso2, by = c("Area"="name"))
+    mutate(Value_fao=Value_fao*1000) %>%  # units in tons
+    arrange(Item)  # sort crops alphabetically
+
   
   fao <- split(fao, fao$Item) # so that list will be matched by crop index
   
@@ -102,7 +103,7 @@ check_baseline_production <- function(fao_production, grogan_production){
     grogan_production[[i]] %>% 
       rename(Value_calc = production) %>% 
       left_join(fao[[i]],
-                by=c("iso_a2"="iso2")
+                by=c("iso_a2"="Area Code (ISO2)")
       ) %>% 
       mutate(Diff = round((Value_calc - Value_fao)/Value_fao,2)) %>% 
       relocate(name, iso_a2, Diff)
@@ -128,6 +129,8 @@ calc_future_yields <- function(yields_data, predictions){
 
 extract_country_production_predictions <- function(predictions, World){
   lapply(1:4, function(i){
+    # extend extent of World to be consistent with predictions (warning message was received)
+    #st_bbox(World) <- st_bbox(c(xmin=-180, ymin=-90, xmax=180, ymax=90))
     
     production <- exactextractr::exact_extract(
       predictions[[i]],
@@ -143,11 +146,11 @@ extract_country_production_predictions <- function(predictions, World){
   
 }
 
-compare_baseline_future_production <- function(predictions, worldmap_clean, fao_production_comparison) {
+compare_baseline_future_production <- function(predictions, worldmap_clean, fao_production_2015_check) {
   lapply(1:4, function(i){
     
     predictions[[i]] %>% 
-      left_join(dplyr::select(fao_production_comparison[[i]],
+      left_join(dplyr::select(fao_production_2015_check[[i]],
                               name,
                               iso_a2,
                               Value_calc,
@@ -175,9 +178,9 @@ calc_crop_allocation <- function(data){
            Prop = Value / Total)
 }
 
-calc_multiyear_crop_allocation <- function(data, fao_iso2){
+calc_multiyear_crop_allocation <- function(data){
   x <- data %>% 
-    group_by(Area,Item, Element) %>% 
+    group_by(Area, `Area Code (ISO2)`, Item, `Item Code (CPC)`, Element) %>% 
     summarise(Alloc_Total = sum(Value, na.rm=T))
   
   x %>% 
@@ -186,41 +189,67 @@ calc_multiyear_crop_allocation <- function(data, fao_iso2){
                 group_by(Area,Item) %>% 
                 summarise(Total_Supply = sum(Value, na.rm=T)),
               by=c("Area","Item")) %>% 
-    mutate(Prop = Alloc_Total/Total_Supply) %>% 
-    left_join(fao_iso2, by=c("Area"="name"))
+    mutate(Prop = Alloc_Total/Total_Supply) 
   # note that only the crop uses sum to 1 = Domestic Supply Quantity:
   # Feed, Food, Seed, Losses, Other uses, Residuals, Seed 
   # and so only those as a proportion of domestic supply quantity should be considered
   # Domestic supply quantity = Production + Import Quantity - Export Quantity - Stock Variation
 }
 
-check_fbs_tm_data <- function(trade_data, fao_crops, fbs_data, concord, alloc){
+check_fao_trade_rice <- function(data){
+  data %>% 
+    filter(`Reporter Countries`=="Japan" & `Item Code (FAO)` %in% c(32, 28, 29, 30, 31, 27) & Element == "Export Quantity")
+  # note that 30 is actually Rice, paddy (rice milled equivalent)
+  # and 27 though labelled just 'Rice' is labelled 'Rice, paddy' in the official correspondance 
+  # quantities for 30 are quite large, whereas quantities for 27 are very low
+  # code 30 is missing from the official correspondance and default composition definition
+  # hypothesise that 30 could be a total figure of all the other rices
+  # (we've been using just 27 rice (actually rice paddy) so far! - introducing trade biases for sure)
+  data %>% 
+    filter(`Reporter Countries`=="Japan" & `Item Code (FAO)` %in% c(30) & Element == "Export Quantity" & Year=="2016") %>% 
+    dplyr::select(`Partner Countries`, Value, `Item Code (FAO)`)
+  # these are identical^
+  data %>% 
+    filter(`Reporter Countries`=="Japan" & `Item Code (FAO)` %in% c(32, 28, 29, 31, 27) & Element == "Export Quantity") %>% 
+    group_by(`Partner Countries`, Year) %>%  
+    summarise(Value=sum(Value)) %>%
+    filter(Year==2016) %>% 
+    print(n=Inf)
+  
+}
+
+check_fbs_tm_data <- function(trade_data, fbs_data, concord, outfile){
   {
     # sum exports by reporting country, by item and year
-    trade <- trade_data %>% 
-      group_by(`Reporter Countries`, Item, Year) %>% 
+    trade <- trade_data %>% left_join(concord, by=c("Item Code (FAO)")) %>% 
+      filter(Element == "Export Quantity") %>% 
+      group_by(`Reporter Countries`, Year, `Reporter Country Code (ISO2)`, `Item Code (CPC)`) %>% 
+
       summarise(Exports_trade=sum(Value,na.rm=T)) %>% 
       mutate(
         Exports_trade = Exports_trade/1000) # for comparison with alloc data
-    
-    concord <- data.frame(
-      alloc_crops = fao_crops, # same order
-      trade_crops = c("Wheat", "Rice", "Maize (corn)", "Soya beans")
-    )
+  
     
     alloc <- fbs_data %>% 
-      dplyr::select(Area, Year, Element, Item, Value) %>% 
+      dplyr::select(Area, `Area Code (ISO2)`, Year, Element, Item, Value, `Item Code (CPC)`) %>% 
       filter(Element == "Export Quantity") %>% 
-      group_by(Area, Item, Year) %>% 
-      pivot_wider(., names_from = Element, values_from = Value) %>%
-      left_join(concord, by=c("Item"="alloc_crops")) %>% 
-      rename(alloc_crops=Item)
+      group_by(Area, `Area Code (ISO2)`, Item, `Item Code (CPC)`, Year) %>% 
+      pivot_wider(., names_from = Element, values_from = Value) 
     
-    trade %>% 
-      left_join(alloc, by = c("Reporter Countries"="Area",
+    x <- trade %>% 
+      
+      left_join(alloc, by = c("Reporter Country Code (ISO2)"="Area Code (ISO2)",
                               "Year",
-                              "Item"="trade_crops")) %>% 
-      mutate(dev=abs(`Export Quantity`-Exports_trade))
+                              "Item Code (CPC)")) %>% 
+      # summarise across years
+      group_by(`Reporter Countries`, Item) %>% 
+      summarise(Export_FBS=sum(`Export Quantity`, na.rm=T),
+                Export_trade = sum(Exports_trade, na.rm=T)) %>% 
+      mutate(dev=abs(Export_FBS-Export_trade))
+    
+    x %>% write_csv(outfile)
+    
+    x
     
     
     # these are remarkably well matched considering trade crop categories
@@ -231,25 +260,29 @@ check_fbs_tm_data <- function(trade_data, fao_crops, fbs_data, concord, alloc){
 }
 
 process_export_data <- function(trade_data, concord, fbs_data){
+
   trade_data %>% 
     filter(Element=="Export Quantity") %>% 
-    dplyr::select(`Reporter Countries`, `Partner Countries`, Item, Year, Value, `Reporter Country Code (M49)`) %>%
+    dplyr::select(`Reporter Countries`, `Partner Countries`, Item, Year, Value, `Reporter Country Code (ISO2)`, `Item Code (FAO)`) %>%
     mutate(Exports_trade = Value/1000) %>%
     dplyr::select(!c("Value")) %>% 
-    left_join(concord, by = c("Item"="trade_crops")) %>% 
+    left_join(concord, by = c("Item Code (FAO)")) %>% 
+    group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Year, `Item Code (CPC)`) %>% 
+    summarise(Exports_trade = sum(Exports_trade, na.rm=T)) %>% 
     left_join(
       dplyr::select(
         fbs_data,
-        Area,
-        `Area Code (M49)`,
+        #Area,
+        `Area Code (ISO2)`,
         Element,
         Item,
+        `Item Code (CPC)`,
         Year,
         Value,  
         Prop), 
       # # unlike previous fao_trade_alloc this joins by exporter
-      by = c("Reporter Country Code (M49)" = "Area Code (M49)",
-             "alloc_crops"="Item",
+      by = c("Reporter Country Code (ISO2)" = "Area Code (ISO2)",
+             "Item Code (CPC)",
              "Year")) %>% 
     dplyr::select(!c("Prop")) %>% 
     filter(Element %in% c("Export Quantity", "Production")) %>% 
@@ -260,18 +293,17 @@ process_export_data <- function(trade_data, concord, fbs_data){
 calc_fao_export_share <- function(fao_trade_export){# remember that export quantity doesn't vary by partner country
   # only by reporter country (it is from fao crop allocation data)
   fao_trade_export %>% 
-    group_by(`Reporter Countries`, Item, alloc_crops, Year) %>%  # summarise across partner countries
+    group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Item, `Item Code (CPC)`, Year) %>%  # summarise across partner countries
     summarise(Exports_total = sum(`Export Quantity`, na.rm=T), # mean before
               Production_total = sum(Production, na.rm=T), # mean before
               #  Exports_trade_total = sum(Exports_trade, na.rm=T), # as this is summing across exports to all countries for an exporting country 
               Exports.total.prop = Exports_total/Production_total) %>% 
     # average over years
-    group_by(`Reporter Countries`, Item, alloc_crops) %>% 
+    group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Item, `Item Code (CPC)`) %>% 
     summarise(Exports_alloc_total = sum(Exports_total, na.rm=T), # export column from alloc dataset
               #  Exports_trade_total = sum(Exports_trade_total, na.rm=T), # export column from trade dataset
               Production_total = sum(Production_total, na.rm=T), # production column from alloc dataset
-              Exports.alloc.total.prop = Exports_alloc_total/Production_total) %>% 
-    relocate(`Reporter Countries`, Item, alloc_crops, Exports.alloc.total.prop, Production_total)
+              Exports.alloc.total.prop = Exports_alloc_total/Production_total) 
 }
 
 rbind_country_production_predictions <- function(predictions){
@@ -279,21 +311,19 @@ rbind_country_production_predictions <- function(predictions){
     rbindlist(., idcol = "crop") %>% 
     left_join(data.frame(
       crop = c(1:4),
-      alloc_crops = c("Maize and products",
+      Item = c("Maize and products",
                       "Rice and products",
                       "Soyabeans",
                       "Wheat and products") # target
     ), by = "crop")}
 
 calc_exports <- function(fao_export_share, 
-                         fao_iso2, 
                          future_production, 
                          crops, 
                          baseline_production){
   fao_export_share %>% 
-    left_join(fao_iso2,by=c("Reporter Countries"="name")) %>% 
     left_join(future_production, 
-              by=c("iso2" = "iso_a2", "alloc_crops")) %>% 
+              by=c("Reporter Country Code (ISO2)" = "iso_a2", "Item")) %>% 
     rename(crop_no=crop) %>% 
     left_join(data.frame(crop_no=c(1:4),crop=crops)) %>% 
     # add baseline exports as well to calculate baseline imports
@@ -303,7 +333,7 @@ calc_exports <- function(fao_export_share,
                             production_2015_gaez,
                             production_2015_fao  # check export calc methodology using FAO production data
     ),
-    by=c("iso2" = "iso_a2", "crop")) %>% 
+    by=c("Reporter Country Code (ISO2)" = "iso_a2", "crop")) %>% 
     # check export calc methodology using FAO production data
     
     # multiply export.prop by future production for total future exports
@@ -312,72 +342,99 @@ calc_exports <- function(fao_export_share,
            exports_fao = Exports.alloc.total.prop * production_2015_fao)
 }
 
-calc_export_partner_share <- function(trade_data, fao_trade_exports){# start with trade matrix data
+calc_export_partner_share <- function(trade_data, concord, est_exports){# start with trade matrix data
   x <- trade_data %>% 
     filter(Element=="Export Quantity") %>% 
+    left_join(concord, by=c("Item Code (FAO)")) %>% 
+    group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`,`Partner Countries`, `Partner Country Code (ISO2)`, `Item Code (CPC)`, `Item (FBS)`, Year) %>% 
+    summarise(Value = sum(Value,na.rm=T)) %>% 
     mutate(
       Exports_trade = Value/1000) %>% 
     dplyr::select(!c("Value")) %>% 
     ungroup()
   
   # calculate total exports by importer/exporter pair summed across years
-  x %>% group_by(`Reporter Countries`, `Partner Countries`, Item) %>% 
+  x %>% group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, 
+                 `Partner Countries`, `Partner Country Code (ISO2)`,
+                 `Item (FBS)`, `Item Code (CPC)`) %>% 
     summarise(sum_exports_partner = sum(Exports_trade, na.rm=T)) %>% 
     # calculate / left join total exports by exporter and summed across years
-    left_join(x %>% group_by(Item, `Reporter Countries`) %>% 
+    left_join(x %>% group_by(`Item Code (CPC)`, `Item (FBS)`, `Reporter Countries`, `Reporter Country Code (ISO2)`) %>% 
                 summarise(sum_exports_total = sum(Exports_trade, na.rm=T)) %>%  # sum across importers
-                dplyr::select(Item, 
+                dplyr::select(`Item (FBS)`,
+                              `Item Code (CPC)`,
                               `Reporter Countries`,
+                              `Reporter Country Code (ISO2)`,
                               sum_exports_total),
-              by = c("Reporter Countries","Item")) %>% 
+              by = c("Reporter Countries","Item (FBS)", "Reporter Country Code (ISO2)", "Item Code (CPC)")) %>% 
     
     # calculate importer-share of total exports by importer/exporter pair (sum-years importer only /sum-years total)
     mutate(partner_export_share = sum_exports_partner/sum_exports_total) %>% 
     # calculate future exports by importer/exporter pair (importer-share * total future exports of each exporter)
-    left_join(dplyr::select(fao_trade_exports,
+    left_join(dplyr::select(est_exports,
                             `Reporter Countries`,
+                            `Reporter Country Code (ISO2)`,
                             Item,
+                            `Item Code (CPC)`,
                             exports_future,
                             exports_baseline,
                             exports_fao), 
-              by = c("Reporter Countries", "Item")) %>% 
+              by = c("Reporter Countries", "Reporter Country Code (ISO2)", "Item Code (CPC)")) %>% 
     mutate(partner_exports_future = exports_future * partner_export_share,
            partner_exports_baseline = exports_baseline * partner_export_share,
            partner_exports_fao = exports_fao * partner_export_share)   # expressed in tons
   
 }
 
-calc_imports <- function(fao_trade_partners, fao_iso2){
-  fao_trade_partners %>% 
-    group_by(`Partner Countries`, Item) %>% 
+calc_imports <- function(est_trade_partners){
+  est_trade_partners %>% 
+    group_by(`Partner Countries`, `Partner Country Code (ISO2)`, `Item (FBS)`, `Item Code (CPC)`) %>% 
+    # there are many Inf values for imports_baseline which are not present in the fao import data
+    mutate(partner_exports_future=ifelse(is.infinite(partner_exports_future),0,partner_exports_future),
+           partner_exports_baseline=ifelse(is.infinite(partner_exports_baseline),0,partner_exports_baseline),
+           partner_exports_fao=ifelse(is.infinite(partner_exports_fao),0,partner_exports_fao)) %>% 
     summarise(imports_future = sum(partner_exports_future, na.rm=T),
               imports_baseline = sum(partner_exports_baseline, na.rm=T),
-              imports_fao = sum(partner_exports_fao, na.rm=T)) %>% 
-    left_join(fao_iso2, by=c("Partner Countries"="name"))
+              imports_fao = sum(partner_exports_fao, na.rm=T)) 
 }
 
-check_baseline_import_export <- function(trade_data, est_imports, est_exports, concord){
-  trade_data %>% 
-    left_join(concord, by=c("Item"="alloc_crops")) %>% 
-    left_join(dplyr::select(est_imports, iso2, imports_baseline, imports_fao, Item), by=c("iso2", "trade_crops"="Item")) %>% 
-    left_join(dplyr::select(est_exports, iso2, exports_baseline, exports_fao, alloc_crops), by=c("iso2", "Item"="alloc_crops"))
+process_fao_import_export_2015_data <- function(fbs_data){
+  fbs_data %>%
+    filter(Element %in% c("Import Quantity",
+                          "Export Quantity")) %>%
+    group_by(Area,`Area Code (ISO2)`, `Item Code (CPC)`,  Item, Element) %>% # summarise across years
+    summarise(mean_value = mean(Value, na.rm=T)*1000) %>% # expressed in tons
+    pivot_wider(., names_from=Element, values_from=mean_value) %>%
+    rename(exports_2015 = `Export Quantity`,
+           imports_2015 = `Import Quantity`) 
+}
+
+check_baseline_import_export <- function(data, est_imports, est_exports, outfile){
+  data %>% 
+    left_join(dplyr::select(est_imports, `Partner Country Code (ISO2)`, imports_baseline, imports_fao, `Item (FBS)`, `Item Code (CPC)`), by=c("Area Code (ISO2)"="Partner Country Code (ISO2)", "Item Code (CPC)")) %>% 
+    left_join(dplyr::select(est_exports, `Reporter Country Code (ISO2)`, exports_baseline, exports_fao, `Item Code (CPC)`), by=c("Area Code (ISO2)"="Reporter Country Code (ISO2)", "Item Code (CPC)")) %>% 
   # actuals are imports_2015 and exports_2015, estimates are imports_baseline and exports_baseline
   # they should be near identical!
+    dplyr::select(Area, `Area Code (ISO2)`, `Item Code (CPC)`, `Item (FBS)`, 
+                  imports_baseline, imports_fao,
+                  exports_baseline, exports_fao) %>% 
+    write_csv(outfile)
 }
 
 calc_future_food_supply <- function(est_imports, 
                                     est_exports, 
-                                    concord, 
                                     fao_crop_allocation_multiyear){
   est_imports %>% 
     left_join(dplyr::select(
       est_exports,
       `Reporter Countries`,
-      Item,
+      `Reporter Country Code (ISO2)`,
+       Item,
+      `Item Code (CPC)`,
       production,
       exports_future
       
-    ), by = c("Partner Countries"="Reporter Countries", "Item")) %>% 
+    ), by = c("Partner Country Code (ISO2)"="Reporter Country Code (ISO2)", "Item Code (CPC)")) %>% 
     mutate(production=ifelse(
       is.na(production) | is.infinite(production), 0, production),
       imports_future=ifelse(
@@ -386,17 +443,17 @@ calc_future_food_supply <- function(est_imports,
         is.na(exports_future) | is.infinite(exports_future), 0, exports_future)) %>% 
     rowwise() %>% 
     mutate(total_supply = production + imports_future - exports_future) %>% 
-    left_join(concord, by = c("Item"="trade_crops")) %>% 
     
     
     # apply crop allocation percentages
     left_join(dplyr::select(
       fao_crop_allocation_multiyear,
-      Area,
+      `Area Code (ISO2)`,
+      `Item Code (CPC)`,
       Item,
       Element, 
       Prop
-    ), by = c("Partner Countries"="Area", "alloc_crops"="Item")) %>%  
+    ), by = c("Partner Country Code (ISO2)"="Area Code (ISO2)", "Item Code (CPC)", "Item")) %>%  
     
     filter(Element %in% c(
       "Feed",
@@ -431,11 +488,11 @@ process_animal_feed_data <- function(animal_production_data,
     ) 
   # summarise across items as a separate table, then left-join back to df by country
   country_total_production <- df %>% 
-    group_by(Area) %>% 
+    group_by(Area, `Area Code (ISO2)`) %>% 
     summarise(Total_Value = sum(Sum_adj, na.rm=T))
   # mutate proportion column
   df %>% 
-    left_join(country_total_production, by = c("Area")) %>% 
+    left_join(country_total_production, by = c("Area", "Area Code (ISO2)")) %>% 
     mutate(Prop = Sum_adj/Total_Value)
 }
 
@@ -444,8 +501,8 @@ calc_total_future_calories <- function(fao_future_food_supply,
                                        crop_calorie_conversion){
   fao_future_food_supply %>% 
     filter(Element %in% c("Feed", "Food")) %>% 
-    left_join(fao_country_feed_calories, by=c("Partner Countries"="Area")) %>% 
-    left_join(crop_calorie_conversion, by=c("Item", "alloc_crops")) %>% 
+    left_join(fao_country_feed_calories, by=c("Partner Country Code (ISO2)"="Area Code (ISO2)")) %>% 
+    left_join(crop_calorie_conversion, by=c("Item (FBS)")) %>% 
     # pivot_longer(., c("crop_conversion", "feed_conversion"), 
     #              names_to = "conversion_element", 
     #              values_to= "conversion_factor")
@@ -626,17 +683,7 @@ aggregate_country_baseline_future_production <- function(country_baseline_future
               total_production_2015_fao=sum(production_2015_fao,na.rm=T))
 }
 
-process_fao_import_export_2015_data <- function(fbs_data, fao_iso2){
-  fbs_data %>%
-    filter(Element %in% c("Import Quantity",
-                          "Export Quantity")) %>%
-    group_by(Area, Item, Element) %>% # summarise across years
-    summarise(mean_value = mean(Value, na.rm=T)*1000) %>% # expressed in tons
-    pivot_wider(., names_from=Element, values_from=mean_value) %>%
-    rename(exports_2015 = `Export Quantity`,
-           imports_2015 = `Import Quantity`) %>%
-    left_join(fao_iso2, by=c("Area"="name"))
-}
+
 
 calc_baseline_calories_by_crop <- function(country_baseline_future_production_df,
                                            alloc_crops,

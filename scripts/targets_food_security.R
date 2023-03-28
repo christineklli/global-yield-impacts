@@ -55,7 +55,7 @@ targets_food_security <- list(
              format_predictions(
                predictions=adj_predictions_by_time_period
              )
-             ),
+  ),
   
   tar_target(grogan_hectares_data,
              c("data/GAEZ data/GAEZAct2015_HarvArea_Maize_Total.tif",
@@ -98,10 +98,10 @@ targets_food_security <- list(
                yields_data=grogan_yield_raster,
                World=World
              )
-        ),
+  ),
   # get FAO 2015 production data for comparison (actually averaged 2014-2016 like in Grogan et al. 2022)
   tar_target(fao_production_2015_data,
-             read_csv("data/Food security data/FAOSTAT_data_en_3-16-2023_production_201416.csv")),
+             read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_production_201416.csv")),
   # get FAO to ISO_A2 correspondance
   tar_target(fao_iso2,
              read_iso2_correspondance(
@@ -109,14 +109,14 @@ targets_food_security <- list(
              )),
   
   # compare with FAO data - 
-  tar_target(fao_production_comparison,
+  tar_target(fao_production_2015_check,
              check_baseline_production(
                fao_production=fao_production_2015_data,
                grogan_production=baseline_yields_production
              )),
   tar_target(global_comparison_check, # note this takes grogan GAEZ data at 5 arcminute resolution
              {lapply(1:4, function(i) {
-               fao_production_comparison[[i]] %>% 
+               fao_production_2015_check[[i]] %>% 
                  summarise(sum_production_calc=sum(Value_calc, na.rm=T),
                            sum_production_fao=sum(Value_fao, na.rm=T)) %>% 
                  mutate(calc_fao_prop = sum_production_calc/sum_production_fao)
@@ -136,7 +136,7 @@ targets_food_security <- list(
                predictions=predictions_glmrs_2021_2040
              )
              
-             ),
+  ),
   # resample yields raster to be ahigher resolution
   tar_target(yields_resampled_raster,
              lapply(1:4, function(i){
@@ -145,7 +145,7 @@ targets_food_security <- list(
                         method="bilinear")
              })),
   
-
+  
   tar_target(predictions_glmrs_2021_2040_raster,
              {
                lapply(1:4, function(i){
@@ -159,16 +159,9 @@ targets_food_security <- list(
                predictions=predictions_glmrs_2021_2040_raster,
                World=World
              )
-             ),
+  ),
   
-  # compare baseline and future production in tons
-  tar_target(country_baseline_future_production,
-             compare_baseline_future_production(
-               predictions=country_predictions_glmrs_2021_2040,
-               worldmap_clean=worldmap_clean,
-               fao_production_comparison=fao_production_comparison
-             )
-            ),
+
   
   
   # crop allocation ---------------------------------------------------------
@@ -178,7 +171,7 @@ targets_food_security <- list(
   # FAO crop allocation data
   tar_target(fao_crop_allocation_data,
              read_csv(
-               "data/Food security data/FAOSTAT_data_en_3-25-2023_FBS_staple_201416.csv")
+               "data/Food security data/FAOSTAT_data_en_3-28-2023_FBS_staple_201416.csv")
   ),
   # calculate domestic crop use proportions
   tar_target(fao_crop_allocation_pct,
@@ -186,50 +179,89 @@ targets_food_security <- list(
                data=fao_crop_allocation_data
              )
              
-             ),
+  ),
   # calculate domestic crop use proportions averaged over 2018-2020
   tar_target(fao_crop_allocation_multiyear,
              calc_multiyear_crop_allocation(
-               data=fao_crop_allocation_data,
-               fao_iso2=fao_iso2
+               data=fao_crop_allocation_data
              )),
   # now to calculate importing nations allocations
   # read in TM data
   
   # future exports and imports -----------------------------------------------------------------
   
+  # read in all trade files
+  tar_target(fao_full_trade_files,
+             {
+               list.files(here(
+                 "data", 
+                 "Food security data",
+                 "FAOSTAT_trade_data_201416"), 
+                 pattern="^.*\\.csv$")
+             }
+  ),
+  # read data and rbind them all together
+  tar_target(fao_trade_full_data,
+             {
+               y <- lapply(fao_full_trade_files, function(x){
+                read_csv(
+                
+                    sprintf("data/Food security data/FAOSTAT_trade_data_201416/%s",x)
+                )
+                
+               })
+               rbindlist(y)
+             }),
+ 
+  # check whether 'rice' is a total of the other rice categories
+  # as it is not included in the default composition of rice and other products
+  # in the FBS definitions and standards
+  tar_target(fao_trade_rice_checks,
+             check_fao_trade_rice(
+               data=fao_trade_full_data
+             )
+             ),
+  # ascertain that item code 30 is the sum of all the other rice categories
+  tar_target(fao_trade_data,
+             fao_trade_full_data %>% filter(!`Item Code (FAO)` %in% c(32, 28, 29, 31, 27))
+             ),
+
+  # read in concordance data
+  tar_target(fao_item_concord,
+             {
+               readxl::read_xlsx("data/Food security data/FAO_trade_FBS_concordance.xlsx")}),
   
-  tar_target(fao_trade_filtered,
-             read_csv(
-               "data/Food security data/FAOSTAT_data_en_3-25-2023_trade_201416.csv"
-             )),
-  tar_target(fao_crops,
-             unique(fao_crop_allocation_data$Item)),
   
-  tar_target(concord,
-             {data.frame(
-               alloc_crops = fao_crops, # same order
-               trade_crops = c("Wheat", "Rice", "Maize (corn)", "Soya beans")
-             )}),
+  # tar_target(fao_trade_filtered,
+  #            read_csv(
+  #              "data/Food security data/FAOSTAT_data_en_3-25-2023_trade_201416.csv"
+  #            )),
+  # tar_target(fao_crops,
+  #            unique(fao_crop_allocation_data$Item)),
+  # 
+  # tar_target(concord,
+  #            {data.frame(
+  #              alloc_crops = fao_crops, # same order
+  #              trade_crops = c("Wheat", "Rice", "Maize (corn)", "Soya beans")
+  #            )}),
   # check that export quantities across FBS and TM datasets per country and crop match
   # as crop labels do not match
-  tar_target(fao_trade_checks,
+  tar_target(fao_fbs_trade_checks,
              check_fbs_tm_data(
-               trade_data=fao_trade_filtered,
+               trade_data=fao_trade_data,
                fbs_data=fao_crop_allocation_data,
-               fao_crops=fao_crops,
-               alloc=alloc,
-               concord=concord
+               concord=fao_item_concord,
+               outfile="processed/fao_fbs_trade_checks.csv"
              )),
   
   tar_target(fao_trade_export,
              process_export_data(
-               trade_data=fao_trade_filtered,
-               concord=concord,
-               fbs_data=fao_crop_allocation_data
+               trade_data=fao_trade_data,
+               concord=fao_item_concord,
+               fbs_data=fao_crop_allocation_pct
                
              )
-             ),
+  ),
   
   # calculate total export proportion today
   tar_target(fao_export_share,
@@ -242,63 +274,83 @@ targets_food_security <- list(
                predictions=country_predictions_glmrs_2021_2040_list
              )),
   
+  # compare baseline and future production in tons
+  tar_target(country_baseline_future_production,
+             compare_baseline_future_production(
+               predictions=country_predictions_glmrs_2021_2040_list,
+               worldmap_clean=worldmap_clean,
+               fao_production_2015_check=fao_production_2015_check
+             )
+  ),
+  # current production from fao and from grogan yield x hectares data
+  tar_target(country_baseline_future_production_df,
+             rbind_country_baseline_future_production_by_crop(
+               country_baseline_future_production=country_baseline_future_production,
+               crops=crops
+             )
+  ),
   # left join to future yield production by Reporter Countries = Country and crops
   tar_target(est_trade_exports,
              calc_exports(
                fao_export_share=fao_export_share,
-               fao_iso2=fao_iso2,
                future_production=country_production_2021_2040_df,
                crops=crops,
                baseline_production=country_baseline_future_production_df
              )
-             ),
+  ),
   
   
   # # calculate export prop by partner
   
   tar_target(est_trade_partners,
              calc_export_partner_share(
-               trade_data=fao_trade_filtered,
-               fao_trade_exports=fao_trade_exports
+               trade_data=fao_trade_data,
+               est_exports=est_trade_exports,
+               concord=fao_item_concord
                
              )
-             ),
+  ),
   # calculate future imports for each country (sum of exports across all export partners)
   
-  tar_target(fao_trade_imports,
+  tar_target(est_trade_imports,
              
              calc_imports(
-               fao_trade_partners=fao_trade_partners,
-               fao_iso2=fao_iso2
+               est_trade_partners=est_trade_partners
              )
-            
-             ),   # expressed in tons
+             
+  ),   # expressed in tons
   
+  # read in import quantities from 2014-2016 of crops from FAO by country from FBS
+  # for checks
+  tar_target(fao_import_export_2015,
+             process_fao_import_export_2015_data(
+               fbs_data=fao_crop_allocation_data
+             )
+  ),
   
   # check and compare baseline estimated/imputed imports/exports and FAO imports/exports
   tar_target(baseline_import_export_checks,
              
              check_baseline_import_export(
-               trade_data=fao_import_export_2015,
+               data=fao_import_export_2015,
                est_imports=est_trade_imports,
                est_exports=est_trade_exports,
-               concord
+               outfile="processed/baseline_import_export_checks.csv"
              )
-             ),
+  ),
   
-
+  
   # sum future production and imports
   tar_target(fao_future_food_supply,
              calc_future_food_supply(
                est_imports=est_trade_imports,
                est_exports=est_trade_exports,
-               concord=concord,
                fao_crop_allocation_multiyear=fao_crop_allocation_multiyear
              )
-              
+             
              
   ),
-  
+ 
   
   # convert future production to calories -----------------------------------
   
@@ -308,12 +360,12 @@ targets_food_security <- list(
   # calculate feed allocation in tons
   # convert feed calories to food calories
   tar_target(fao_animal_production_data,
-             read_csv("data/Food security data/FAOSTAT_data_en_3-25-2023_feed_production_201416.csv")),
+             read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_feed_production_201416.csv")),
   
   tar_target(fao_animal_production_feed,
              {  # sum production per product over the years
                country_item_production <- fao_animal_production_data %>%
-                 group_by(Area, Item) %>% 
+                 group_by(Area, `Area Code (ISO2)`, Item) %>% 
                  summarise(Sum_Value = sum(Value, na.rm=T))
                
              }),
@@ -348,26 +400,25 @@ targets_food_security <- list(
                grazing_income_group=grazing_income_group,
                livestock_feed_conversion=livestock_feed_conversion
              )
-             ),
+  ),
   
   # # calculate weighted average feed-to-calories conversion factor by country
   tar_target(fao_country_feed_calories,
              {
                fao_animal_product_feed_calories %>%
-                 group_by(Area) %>% 
+                 group_by(Area, `Area Code (ISO2)`) %>% 
                  summarise(feed_conversion = weighted.mean(
                    conversion, Prop
-                 )) %>% 
-                 left_join(fao_iso2, by=c("Area"="name"))
+                 )) 
              }),
   # create tribble of food to calories conversion from Cassidy et al. 2013 for 4 crops
   tar_target(crop_calorie_conversion,
              {tribble(
-               ~Item, ~crop_conversion, ~alloc_crops,
-               "Maize (corn)", 3580802.60, "Maize and products",
-               "Rice", 2800000.00, "Rice and products",
-               "Soya beans", 3596499.11, "Soyabeans",
-               "Wheat", 3284000.00, "Wheat and products"
+               ~crop_conversion, ~`Item (FBS)`,
+               3580802.60, "Maize and products",
+               2800000.00, "Rice and products",
+               3596499.11, "Soyabeans",
+               3284000.00, "Wheat and products"
              )}),
   # left join feed and food calorie conversion back to fao_future_food_supply
   tar_target(future_calories,
@@ -377,10 +428,10 @@ targets_food_security <- list(
                crop_calorie_conversion=crop_calorie_conversion
              )
              
-             ),
+  ),
   tar_target(future_total_calories,
              future_calories %>% 
-               group_by(`Partner Countries`) %>% 
+               group_by(`Partner Countries`, `Partner Country Code (ISO2)`) %>% 
                summarise(total_calories=sum(total_calories, na.rm=T))
   ),
   # join with country_pop_mder for country annual mder shortfall
@@ -391,7 +442,7 @@ targets_food_security <- list(
                worldmap_clean=worldmap_clean,
                country_pop_mder=country_pop_mder
              )
-             ),
+  ),
   tar_target(global_food_gap,
              {future_food_gap %>% 
                  summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
@@ -406,7 +457,7 @@ targets_food_security <- list(
              }),
   tar_target(fao_all_products_kcal,
              {
-               read_csv("data/Food security data/FAOSTAT_data_en_3-25-2023_kcal_201416.csv")
+               read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_kcal_201416.csv")
              }),
   tar_target(fao_staple_share,
              calc_staple_share_calories(
@@ -415,7 +466,7 @@ targets_food_security <- list(
                grazing_income_group=grazing_income_group,
                fao_iso2=fao_iso2
              )
-             ),
+  ),
   # check FAO global calories delivered by country, how it compares to our calcs of total_calorie_supply in 2015
   tar_target(comparison_2015_calories_supply,
              check_est_fao_total_calories(
@@ -426,7 +477,7 @@ targets_food_security <- list(
                baseline_2015_total_calories=baseline_2015_total_calories
              )
              
-             ),
+  ),
   
   # check calorie gap by country if using FAO calorie supply data
   tar_target(comparison_2015_calorie_gap,
@@ -436,7 +487,7 @@ targets_food_security <- list(
                country_pop_mder_2015=country_pop_mder_2015,
                outfile="results/tables/comparison_2015_calorie_gap.csv"
              )
-             ),
+  ),
   
   
   # calculate prevalence of undernourishment
@@ -447,14 +498,8 @@ targets_food_security <- list(
                country_pop_mder=country_pop_mder,
                fao_staple_share=fao_staple_share
              )
-             ),
-  # current production from fao and from grogan yield x hectares data
-  tar_target(country_baseline_future_production_df,
-             rbind_country_baseline_future_production_by_crop(
-               country_baseline_future_production=country_baseline_future_production,
-               crops=crops
-             )
-             ),
+  ),
+
   # calculate total production in tons across all crops
   # this looks pretty reasonable in terms of changes, am guessing most of the 
   # shortfall in demand comes from growth in population
@@ -462,16 +507,9 @@ targets_food_security <- list(
              aggregate_country_baseline_future_production(
                country_baseline_future_production_df=country_baseline_future_production_df
              )
-             ),
-  # read in import quantities from 2014-2016 of crops from FAO by country from FBS
-  # for checks
-  tar_target(fao_import_export_2015,
-             process_fao_import_export_2015_data(
-               fbs_data=fao_crop_allocation_data,
-               fao_iso2=fao_iso2
-             )
-             ),
+  ),
 
+  
   # left join crop conversions to calculate total calories in baseline and future 
   tar_target(baseline_2015_calories_by_crop,
              calc_baseline_calories_by_crop(
@@ -483,11 +521,11 @@ targets_food_security <- list(
                est_imports=est_trade_imports,
                est_exports=est_trade_exports
              )
-             ),
+  ),
   
   # need average 2015 (2014-2016) population from FAO
   tar_target(fao_population_2015_data,
-             {read_csv("data/Food security data/FAOSTAT_data_en_3-21-2023_population_201416.csv")}),
+             {read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_population_201416.csv")}),
   tar_target(fao_population_2015,
              calc_pop_2015(
                data=fao_population_2015_data,
@@ -495,7 +533,7 @@ targets_food_security <- list(
                worldmap_clean=worldmap_clean
              )
              
-        
+             
   ),
   # need 2015 mder_annual_2015
   tar_target(country_pop_mder_2015,
@@ -526,7 +564,7 @@ targets_food_security <- list(
                future_2030_calorie_gap=future_2030_calorie_gap,
                baseline_2015_calorie_gap=baseline_2015_calorie_gap,
                outfile="processed/baseline_future_pou_rates.csv")
-             ),
+  ),
   # count frequ
   tar_target(freq_FI_status_change,
              {
@@ -543,7 +581,7 @@ targets_food_security <- list(
                World=World,
                outfile="results/figures/food security/change_in_FI_status.png"
              )
-             ),
+  ),
   # heat map of change in PoU rate 
   # increase in the proportion of food insecure persons (as a percentage point increase)
   tar_target(pou_rate_change_capped_plot,
@@ -552,8 +590,8 @@ targets_food_security <- list(
                World=World,
                outfile="results/figures/food security/pou_rate_change_capped.png"
              )
-             ),
-
+  ),
+  
   # ccalculate change in calories from population growth and production
   tar_target(decomposed_change_in_calories,
              decompose_calorie_gap_change(
@@ -562,7 +600,7 @@ targets_food_security <- list(
                comparison_2015_calorie_gap=comparison_2015_calorie_gap # to compare gap if using FAO supply to calculate calorie gap
                
              )
-             ),
+  ),
   # only select 42 countries that were secure and will become insecure
   tar_target(countries_becoming_insecure,
              {
@@ -585,16 +623,16 @@ targets_food_security <- list(
                countries_becoming_insecure=countries_becoming_insecure,
                outfile="results/figures/food security/pou_change_decomposed_become_insecure.png"
              )
-             ),
+  ),
   tar_target(calorie_gap_decomposed_become_insecure_plot,
              plot_calorie_gap_decomposed_become_insecure(
                decomposed_change_in_calories=decomposed_change_in_calories,
                countries_becoming_insecure=countries_becoming_insecure,
                outfile="results/figures/food security/calorie_gap_decomposed_become_insecure.png"
              )
-             ),
+  ),
   # repeat but in terms of # of hungry people or in terms of hungry people/population
- 
+  
   # in terms of hungry persons
   tar_target(persons_change_decomposed_become_insecure_plot,
              plot_persons_change_decomposed_become_insecure(
@@ -602,13 +640,13 @@ targets_food_security <- list(
                countries_becoming_insecure=countries_becoming_insecure,
                outfile="results/figures/food security/persons_change_decomposed_become_insecure.png"
              )
-             ),
- 
+  ),
+  
   tar_target(pou_change_decomposed_remain_insecure_plot,
              plot_pou_change_decomposed_remain_insecure(
                decomposed_change_in_calories=decomposed_change_in_calories,
                countries_remaining_insecure=countries_remaining_insecure,
                outfile="results/figures/food security/pou_change_decomposed_remain_insecure.png"
              )
-             )
+  )
 )
