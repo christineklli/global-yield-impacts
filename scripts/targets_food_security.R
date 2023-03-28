@@ -17,11 +17,11 @@ targets_food_security <- list(
   
   
   tar_target(pop_10km_file,
-             {here("data", "Food security data", "RCP8.5_10000m.tif")},
-             format="file"),
+             {here("data", "Food security data", "RCP8.5_10000m.tif")}),
   tar_target(pop_10km_data,
              rasterise_pop_10km_file(
-               file=pop_10km_file
+               file=pop_10km_file,
+               outfile="processed/pop_10km_data.tif"
              )
   ), 
   tar_target(pop_10km_raster_file,
@@ -438,23 +438,22 @@ targets_food_security <- list(
   tar_target(future_food_gap,
              calc_future_food_gap(
                future_total_calories=future_total_calories,
-               fao_iso2=fao_iso2,
                worldmap_clean=worldmap_clean,
                country_pop_mder=country_pop_mder
              )
   ),
   tar_target(global_food_gap,
-             {future_food_gap %>% 
+             {future_food_gap %>% ungroup() %>% 
                  summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
                            total_calorie_demand = sum(calories_demand, na.rm=T),
                            calorie_gap = total_calorie_demand/total_calorie_supply)}),
-  # calculate only calories from food (not feed) and total calories from crops other than maize/rice/soy/wheat
-  tar_target(future_crop_calories,
-             {future_calories %>% 
-                 group_by(`Partner Countries`) %>% 
-                 summarise(total_food_calories=sum(food_calories, na.rm=T)) %>% 
-                 mutate(total_calories = total_food_calories/0.6417) # from tilman; maize+rice+soy+wheat=0.6417 (not including feed)
-             }),
+  # # calculate only calories from food (not feed) and total calories from crops other than maize/rice/soy/wheat
+  # tar_target(future_crop_calories,
+  #            {future_calories %>% 
+  #                group_by(`Partner Countries`) %>% 
+  #                summarise(total_food_calories=sum(food_calories, na.rm=T)) %>% 
+  #                mutate(total_calories = total_food_calories/0.6417) # from tilman; maize+rice+soy+wheat=0.6417 (not including feed)
+  #            }),
   tar_target(fao_all_products_kcal,
              {
                read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_kcal_201416.csv")
@@ -463,22 +462,64 @@ targets_food_security <- list(
              calc_staple_share_calories(
                fao_all_products_kcal=fao_all_products_kcal,
                world_bank_country_list=world_bank_country_list,
-               grazing_income_group=grazing_income_group,
-               fao_iso2=fao_iso2
+               grazing_income_group=grazing_income_group
              )
   ),
+
+  
+  # left join crop conversions to calculate total calories in baseline and future 
+  tar_target(baseline_2015_calories_by_crop,
+             calc_baseline_calories_by_crop(
+               country_baseline_future_production_df=country_baseline_future_production_df,
+               fao_crop_allocation_multiyear=fao_crop_allocation_multiyear,
+               fao_country_feed_calories=fao_country_feed_calories,
+               crop_calorie_conversion=crop_calorie_conversion,
+               est_imports=est_trade_imports,
+               est_exports=est_trade_exports,
+               crops=crops
+             )
+  ),
+  
+  # need average 2015 (2014-2016) population from FAO
+  tar_target(fao_population_2015_data,
+             {read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_population_201416.csv")}),
+  
+  tar_target(fao_population_2015,
+             calc_pop_2015(
+               data=fao_population_2015_data,
+               worldmap_clean=worldmap_clean
+             )
+             
+             
+  ),
+  # need 2015 mder_annual_2015
+  tar_target(country_pop_mder_2015,
+             calc_country_pop_mder_2015(
+               mder_data=mder_data,
+               fao_population_2015=fao_population_2015
+             )
+             
+  ),
+  
+  tar_target(baseline_2015_calorie_gap,
+             calc_baseline_calorie_gap(
+               baseline_2015_calories_by_crop=baseline_2015_calories_by_crop,
+               country_pop_mder_2015=country_pop_mder_2015,
+               fao_staple_share=fao_staple_share
+             )
+             
+  ),
+  
   # check FAO global calories delivered by country, how it compares to our calcs of total_calorie_supply in 2015
   tar_target(comparison_2015_calories_supply,
              check_est_fao_total_calories(
                fao_all_products_kcal=fao_all_products_kcal,
                world_bank_country_list=world_bank_country_list,
                grazing_income_group=grazing_income_group,
-               fao_iso2=fao_iso2,
-               baseline_2015_total_calories=baseline_2015_total_calories
+               baseline_2015_calorie_gap=baseline_2015_calorie_gap
              )
              
   ),
-  
   # check calorie gap by country if using FAO calorie supply data
   tar_target(comparison_2015_calorie_gap,
              check_est_fao_calorie_gap(
@@ -510,53 +551,11 @@ targets_food_security <- list(
   ),
 
   
-  # left join crop conversions to calculate total calories in baseline and future 
-  tar_target(baseline_2015_calories_by_crop,
-             calc_baseline_calories_by_crop(
-               country_baseline_future_production_df=country_baseline_future_production_df,
-               crops=crops,
-               fao_crop_allocation_multiyear=fao_crop_allocation_multiyear,
-               fao_country_feed_calories=fao_country_feed_calories,
-               crop_calorie_conversion=crop_calorie_conversion,
-               est_imports=est_trade_imports,
-               est_exports=est_trade_exports
-             )
-  ),
-  
-  # need average 2015 (2014-2016) population from FAO
-  tar_target(fao_population_2015_data,
-             {read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_population_201416.csv")}),
-  tar_target(fao_population_2015,
-             calc_pop_2015(
-               data=fao_population_2015_data,
-               fao_iso2=fao_iso2,
-               worldmap_clean=worldmap_clean
-             )
-             
-             
-  ),
-  # need 2015 mder_annual_2015
-  tar_target(country_pop_mder_2015,
-             calc_country_pop_mder_2015(
-               mder_data=mder_data,
-               fao_population_2015=fao_population_2015
-             )
-             
-  ),
-  
-  tar_target(baseline_2015_calorie_gap,
-             calc_baseline_calorie_gap(
-               baseline_2015_calorie_gap_by_crop=baseline_2015_calorie_gap_by_crop,
-               country_pop_mder_2015=country_pop_mder_2015,
-               fao_staple_share=fao_staple_share
-             )
-             
-  ),
   # write out pou_rates future and present into csv
   tar_target(pou_by_country_future_csv,
-             write_csv(future_2030_total_calories, "processed/pou_by_country_2021_2040.csv")),
+             write_csv(future_2030_calorie_gap, "processed/future_2030_calorie_gap.csv")),
   tar_target(pou_by_country_baseline_csv,
-             write_csv(baseline_2015_total_calories, "processed/pou_by_country_2015.csv")),
+             write_csv(baseline_2015_calorie_gap, "processed/baseline_2015_calorie_gap.csv")),
   
   # break down the difference between current production & future production
   tar_target(calorie_gap_change,
@@ -604,14 +603,14 @@ targets_food_security <- list(
   # only select 42 countries that were secure and will become insecure
   tar_target(countries_becoming_insecure,
              {
-               change_in_pou_rate %>% 
+               calorie_gap_change %>% 
                  filter(FI_status_change=="become insecure") %>% 
                  dplyr::select("Country.x", "ISO_A3")
              }),
   # sset of countries that remain insecure
   tar_target(countries_remaining_insecure,
              {
-               change_in_pou_rate %>% 
+               calorie_gap_change %>% 
                  filter(FI_status_change=="remain insecure") %>% 
                  dplyr::select("Country.x", "ISO_A3")
              }),
