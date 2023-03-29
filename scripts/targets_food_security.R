@@ -118,6 +118,11 @@ targets_food_security <- list(
                fao_production=fao_production_2015_data,
                grogan_production=baseline_yields_production
              )),
+  tar_target(write_baseline_production_check,
+             {fao_production_2015_check %>% 
+                 rbindlist(., idcol="crop") %>% 
+                 write_csv("processed/baseline_production_fao_grogan_check.csv")
+             }),
   tar_target(global_comparison_check, # note this takes grogan GAEZ data at 5 arcminute resolution
              {lapply(1:4, function(i) {
                fao_production_2015_check[[i]] %>% 
@@ -636,11 +641,11 @@ targets_food_security <- list(
   ),
   # heat map of change in PoU rate 
   # increase in the proportion of food insecure persons (as a percentage point increase)
-  tar_target(rate_change_capped_plot,
-             plot_rate_change_capped(
+  tar_target(rate_change_plot,
+             plot_rate_change(
                calorie_gap_change=calorie_gap_change,
                World=World,
-               outfile="results/figures/food security/rate_change_capped.png"
+               outfile="results/figures/food security/rate_change.png"
              )
   ),
   

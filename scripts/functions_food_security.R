@@ -107,7 +107,7 @@ check_baseline_production <- function(fao_production, grogan_production){
       ) %>% 
       mutate(Diff = round((Value_calc - Value_fao)/Value_fao,2)) %>% 
       relocate(name, iso_a2, Diff)
-  })
+  }) 
 }
 
 calc_future_yields <- function(yields_data, predictions){
@@ -850,27 +850,30 @@ plot_FI_status_change <- function(calorie_gap_change,
 
 
 
-plot_rate_change_capped <- function(calorie_gap_change,
+plot_rate_change <- function(calorie_gap_change,
                                         World,
                                         outfile){
   data <- calorie_gap_change %>% 
   # disregard food excess supply (net exporting countries) as the focus is on food security
   # the minimum pou rate is 0
-  mutate(pou_rate_2015=ifelse(pou_rate_2015<0, 0, pou_rate_2015),
-         pou_rate_2030=ifelse(pou_rate_2030<0, 0, pou_rate_2030),
+  mutate(#pou_rate_2015=ifelse(pou_rate_2015<0, 0, pou_rate_2015),
+         #pou_rate_2030=ifelse(pou_rate_2030<0, 0, pou_rate_2030),
          pou_rate_change=pou_rate_2030-pou_rate_2015)
-  # for uncapped, mutate (pou_rate_change=(pou_rate_2030-pou_rate_2015)/pou_rate_2015)
+  # for uncapped, mutate (
+    #pou_rate_change=(pou_rate_2030-pou_rate_2015)/pou_rate_2015)
 
 dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
 
 plot <- tmap::tm_shape(dat) +
   tm_fill("pou_rate_change",
-          palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
-          
+          palette=rev(hcl.colors(7,"RdYlGn")),
+          #palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
+          #palette=c("yellowgreen", "lightyellow","khaki1","orange"),
+          # note that some countries exceed this such as Ukraine
           #   palette=c("darkgreen", "yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
-          breaks=c(-1.0,-0.8,-0.6,-0.4,-0.2, 0, 0.2,0.4,0.6,0.8, 1.0),
+          #breaks=c(-0.4,-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5),
           midpoint=0,
-          title= '2015 to 2021-2040') +
+          title= 'Change in calorie gap (persons/popn)') +
   tmap::tm_shape(World) +
   tmap::tm_borders("grey", lwd =1) 
 
