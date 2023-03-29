@@ -825,6 +825,27 @@ data
 
 }
 
+map_calorie_gap_persons <- function(data, World, outfile){
+  
+  data <- data %>% 
+    dplyr::select(c("Country", "Partner Country Code (ISO2)","ISO_A3", "food_insecure_persons")) %>% 
+    mutate(persons_millions = food_insecure_persons/10^6)
+    
+    dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
+    
+    plot <- tmap::tm_shape(dat) +
+      tm_fill("persons_millions",
+              palette = c(rev(hcl.colors(7,"RdYlGn"))),
+              #palette=c("orange","lightgreen","red3","darkgreen"),
+              title= 'Calorie gap in persons (millions)') +
+      tmap::tm_shape(World) +
+      tmap::tm_borders("grey", lwd =1) 
+    
+    tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
+    plot
+    
+}
+
 plot_FI_status_change <- function(calorie_gap_change,
                                   World,
                                   outfile){

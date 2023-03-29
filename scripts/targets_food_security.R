@@ -99,7 +99,7 @@ targets_food_security <- list(
                World=World
              )
   ),
-
+  
   # get FAO to ISO_A2 correspondance
   tar_target(fao_iso2,
              read_iso2_correspondance(
@@ -170,7 +170,7 @@ targets_food_security <- list(
              )
   ),
   
-
+  
   
   
   # crop allocation ---------------------------------------------------------
@@ -187,7 +187,7 @@ targets_food_security <- list(
                  pattern="^.*\\.csv$")
              }
              
-             ),
+  ),
   tar_target(fao_crop_allocation_data,
              {y <- lapply(fao_crop_allocation_files, function(x){
                read_csv(
@@ -232,15 +232,15 @@ targets_food_security <- list(
   tar_target(fao_trade_full_data,
              {
                y <- lapply(fao_full_trade_files, function(x){
-                read_csv(
-                
-                    sprintf("data/Food security data/FAOSTAT_trade_data_201416/%s",x)
-                )
-                
+                 read_csv(
+                   
+                   sprintf("data/Food security data/FAOSTAT_trade_data_201416/%s",x)
+                 )
+                 
                })
                rbindlist(y)
              }),
- 
+  
   # check whether 'rice' is a total of the other rice categories
   # as it is not included in the default composition of rice and other products
   # in the FBS definitions and standards
@@ -248,7 +248,7 @@ targets_food_security <- list(
              check_fao_trade_rice(
                data=fao_trade_full_data
              )
-             ),
+  ),
   # ascertain that item code 30 is the sum of all the other rice categories
   tar_target(fao_export_data,
              {data <- fao_trade_full_data %>% 
@@ -263,8 +263,8 @@ targets_food_security <- list(
                mutate(Value=ifelse(is.na(Value),0,Value)) 
              # now append missing Reporter countries as having export quantity == NA or 0?
              }
-             ),
-
+  ),
+  
   # read in concordance data
   tar_target(fao_item_concord,
              {
@@ -389,7 +389,7 @@ targets_food_security <- list(
              
              
   ),
- 
+  
   
   # convert future production to calories -----------------------------------
   
@@ -405,9 +405,9 @@ targets_food_security <- list(
                  mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
                  mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
                
-               }
-               
-               ),
+             }
+             
+  ),
   
   tar_target(fao_animal_production_feed,
              {  # sum production per product over the years
@@ -489,7 +489,8 @@ targets_food_security <- list(
                country_pop_mder=country_pop_mder
              )
   ),
-  tar_target(global_food_gap,
+  tar_target(global_food_gap, # this needs to be redone 
+             # as should be excluding imports/exports? just count production?
              {future_food_gap %>% ungroup() %>% 
                  summarise(total_calorie_supply = sum(calories_supply, na.rm=T),
                            total_calorie_demand = sum(calories_demand, na.rm=T),
@@ -516,7 +517,7 @@ targets_food_security <- list(
                grazing_income_group=grazing_income_group
              )
   ),
-
+  
   
   # left join crop conversions to calculate total calories in baseline and future 
   tar_target(baseline_2015_calories_by_crop,
@@ -540,7 +541,7 @@ targets_food_security <- list(
                  mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
                  mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
                
-               }),
+             }),
   
   tar_target(fao_population_2015,
              calc_pop_2015(
@@ -587,7 +588,13 @@ targets_food_security <- list(
                outfile="processed/comparison_2015_calorie_gap.csv"
              )
   ),
-  
+  tar_target(baseline_global_food_gap,
+             {comparison_2015_calorie_gap %>% 
+                 ungroup() %>%  
+                 summarise(calorie_supply = sum(calories_supply_total_gaez, na.rm=T), 
+                           calorie_demand = sum(calories_demand,na.rm=T), 
+                           calorie_gap = calorie_demand/calorie_supply)}
+  ),
   
   # calculate prevalence of undernourishment
   # (supply/0.7 - demand)/(mder per person per year) and /population
@@ -598,7 +605,7 @@ targets_food_security <- list(
                fao_staple_share=fao_staple_share
              )
   ),
-
+  
   # calculate total production in tons across all crops
   # this looks pretty reasonable in terms of changes, am guessing most of the 
   # shortfall in demand comes from growth in population
@@ -607,7 +614,7 @@ targets_food_security <- list(
                country_baseline_future_production_df=country_baseline_future_production_df
              )
   ),
-
+  
   
   # write out pou_rates future and present into csv
   tar_target(pou_by_country_future_csv,
@@ -631,6 +638,14 @@ targets_food_security <- list(
                               function(x) table(factor(x, levels = lvls,
                                                        ordered=TRUE)))
              }),
+  
+  tar_target(calorie_gap_persons_2030_map,
+             map_calorie_gap_persons(
+               data=future_2030_calorie_gap,
+               World=world,
+               outfile="results/figures/food security/calorie_gap_persons_2030.png"
+             )
+             ),
   # heat map of just the four categorical variables of FI status change
   tar_target(FI_status_change_plot,
              plot_FI_status_change(
