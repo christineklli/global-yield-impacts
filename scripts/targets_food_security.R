@@ -584,7 +584,7 @@ targets_food_security <- list(
                comparison_2015_calories_supply=comparison_2015_calories_supply,
                worldmap_clean=worldmap_clean,
                country_pop_mder_2015=country_pop_mder_2015,
-               outfile="results/tables/comparison_2015_calorie_gap.csv"
+               outfile="processed/comparison_2015_calorie_gap.csv"
              )
   ),
   
