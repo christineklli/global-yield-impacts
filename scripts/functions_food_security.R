@@ -83,7 +83,7 @@ read_iso2_correspondance <- function(file){
            iso2=ifelse(name=="Namibia", "NA", iso2),
            iso2=ifelse(name=="China", "C_", iso2),
            name=ifelse(iso2=="GB", "United Kingdom of Great Britain and Northern Ireland", name)
-    )
+    ) 
   
 }
 
@@ -218,11 +218,10 @@ check_fao_trade_rice <- function(data){
   
 }
 
-check_fbs_tm_data <- function(trade_data, fbs_data, concord, outfile){
+check_fbs_tm_data <- function(fao_export_data, fbs_data, concord, outfile){
   {
     # sum exports by reporting country, by item and year
-    trade <- trade_data %>% left_join(concord, by=c("Item Code (FAO)")) %>% 
-      filter(Element == "Export Quantity") %>% 
+    trade <- fao_export_data %>% left_join(concord, by=c("Item Code (FAO)")) %>% 
       group_by(`Reporter Countries`, Year, `Reporter Country Code (ISO2)`, `Item Code (CPC)`) %>% 
 
       summarise(Exports_trade=sum(Value,na.rm=T)) %>% 
@@ -242,7 +241,7 @@ check_fbs_tm_data <- function(trade_data, fbs_data, concord, outfile){
                               "Year",
                               "Item Code (CPC)")) %>% 
       # summarise across years
-      group_by(`Reporter Countries`, Item) %>% 
+      group_by(`Reporter Countries`, `Item Code (CPC)`) %>% 
       summarise(Export_FBS=sum(`Export Quantity`, na.rm=T),
                 Export_trade = sum(Exports_trade, na.rm=T)) %>% 
       mutate(dev=abs(Export_FBS-Export_trade))
@@ -259,31 +258,32 @@ check_fbs_tm_data <- function(trade_data, fbs_data, concord, outfile){
   }
 }
 
-process_export_data <- function(trade_data, concord, fbs_data){
+process_export_data <- function(fao_export_data, concord, fbs_data){
 
-  trade_data %>% 
-    filter(Element=="Export Quantity") %>% 
+  export <- fao_export_data %>% 
     dplyr::select(`Reporter Countries`, `Partner Countries`, Item, Year, Value, `Reporter Country Code (ISO2)`, `Item Code (FAO)`) %>%
     mutate(Exports_trade = Value/1000) %>%
     dplyr::select(!c("Value")) %>% 
     left_join(concord, by = c("Item Code (FAO)")) %>% 
     group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Year, `Item Code (CPC)`) %>% 
-    summarise(Exports_trade = sum(Exports_trade, na.rm=T)) %>% 
-    left_join(
-      dplyr::select(
-        fbs_data,
-        #Area,
-        `Area Code (ISO2)`,
-        Element,
-        Item,
-        `Item Code (CPC)`,
-        Year,
-        Value,  
-        Prop), 
+    summarise(Exports_trade = sum(Exports_trade, na.rm=T)) 
+  
+  
+  fbs <-  fbs_data %>% dplyr::select(`Area Code (ISO2)`,
+                                     Element,
+                                     Item,
+                                     `Item Code (CPC)`,
+                                     Year,
+                                     Value,  
+                                     Prop)
+  
+  fbs %>% 
+    left_join(export, 
       # # unlike previous fao_trade_alloc this joins by exporter
-      by = c("Reporter Country Code (ISO2)" = "Area Code (ISO2)",
+      by = c("Area Code (ISO2)"="Reporter Country Code (ISO2)",
              "Item Code (CPC)",
              "Year")) %>% 
+    rename("Reporter Country Code (ISO2)"="Area Code (ISO2)") %>% 
     dplyr::select(!c("Prop")) %>% 
     filter(Element %in% c("Export Quantity", "Production")) %>% 
     pivot_wider(names_from = Element,
@@ -321,10 +321,11 @@ calc_exports <- function(fao_export_share,
                          future_production, 
                          crops, 
                          baseline_production){
-  fao_export_share %>% 
-    left_join(future_production, 
-              by=c("Reporter Country Code (ISO2)" = "iso_a2", "Item")) %>% 
-    rename(crop_no=crop) %>% 
+  future_production %>% 
+    left_join(fao_export_share, 
+              by=c("iso_a2"="Reporter Country Code (ISO2)", "Item")) %>%
+    rename(crop_no=crop,
+           "Reporter Country Code (ISO2)"=iso_a2) %>% 
     left_join(data.frame(crop_no=c(1:4),crop=crops)) %>% 
     # add baseline exports as well to calculate baseline imports
     left_join(dplyr::select(baseline_production, # using GAEZ production data
@@ -342,9 +343,8 @@ calc_exports <- function(fao_export_share,
            exports_fao = Exports.alloc.total.prop * production_2015_fao)
 }
 
-calc_export_partner_share <- function(trade_data, concord, est_exports){# start with trade matrix data
-  x <- trade_data %>% 
-    filter(Element=="Export Quantity") %>% 
+calc_export_partner_share <- function(fao_export_data, concord, est_exports){# start with trade matrix data
+  x <- fao_export_data %>% 
     left_join(concord, by=c("Item Code (FAO)")) %>% 
     group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`,`Partner Countries`, `Partner Country Code (ISO2)`, `Item Code (CPC)`, `Item (FBS)`, Year) %>% 
     summarise(Value = sum(Value,na.rm=T)) %>% 
@@ -427,7 +427,6 @@ calc_future_food_supply <- function(est_imports,
   est_imports %>% 
     left_join(dplyr::select(
       est_exports,
-      `Reporter Countries`,
       `Reporter Country Code (ISO2)`,
        Item,
       `Item Code (CPC)`,
@@ -832,11 +831,11 @@ plot_FI_status_change <- function(calorie_gap_change,
   data <- calorie_gap_change %>% 
     dplyr::select(`Partner Country Code (ISO2)`, ISO_A3, FI_status_change) 
   
-  dat <- World %>% left_join(data, by=c("Partner Country Code (ISO2)"="iso2"))
+  dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
   
   plot <- tmap::tm_shape(dat) +
     tm_fill("FI_status_change",
-            palette = c("orange", "red3","darkgreen","black"),
+            palette = c("orange", "black","red3","darkgreen"),
             #palette=c("orange","lightgreen","red3","darkgreen"),
             title= '2015 to 2021-2040') +
     tmap::tm_shape(World) +
@@ -846,7 +845,12 @@ plot_FI_status_change <- function(calorie_gap_change,
   plot
 }
 
-plot_pou_rate_change_capped <- function(calorie_gap_change,
+
+
+
+
+
+plot_rate_change_capped <- function(calorie_gap_change,
                                         World,
                                         outfile){
   data <- calorie_gap_change %>% 
@@ -857,7 +861,7 @@ plot_pou_rate_change_capped <- function(calorie_gap_change,
          pou_rate_change=pou_rate_2030-pou_rate_2015)
   # for uncapped, mutate (pou_rate_change=(pou_rate_2030-pou_rate_2015)/pou_rate_2015)
 
-dat <- World %>% left_join(data, by=c("Partner Country Code (ISO2)"="iso2"))
+dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
 
 plot <- tmap::tm_shape(dat) +
   tm_fill("pou_rate_change",
@@ -874,6 +878,10 @@ tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
 plot
 # 
 }
+
+
+
+
 
 decompose_calorie_gap_change <- function(future_2030_calorie_gap,
                                          baseline_2015_calorie_gap,
@@ -909,33 +917,33 @@ decompose_calorie_gap_change <- function(future_2030_calorie_gap,
   
 }
 
-plot_pou_change_decomposed_become_insecure <- function(decomposed_change_in_calories,
+plot_rate_change_decomposed_become_insecure <- function(decomposed_change_in_calories,
                                                        outfile,
                                                        countries_becoming_insecure){
   data <- decomposed_change_in_calories %>% 
     dplyr::select(!c("name")) %>% 
-    mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
-           pou_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
-           pou_gap_2015_fao=calorie_gap_2015_fao/mder_annual_2015/pop_2015,
-           change_demand_pou=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
-           change_supply_pou=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
+    mutate(rate_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
+           rate_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
+           rate_gap_2015_fao=calorie_gap_2015_fao/mder_annual_2015/pop_2015,
+           change_demand_rate=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
+           change_supply_rate=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
     filter(
       ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
     pivot_longer(.,
-                 c("pou_gap_2030",
-                   "pou_gap_2015",
-                   "pou_gap_2015_fao",
-                   "change_demand_pou",
-                   "change_supply_pou",),
+                 c("rate_gap_2030",
+                   "rate_gap_2015",
+                   "rate_gap_2015_fao",
+                   "change_demand_rate",
+                   "change_supply_rate",),
                  names_to="measure",
-                 values_to="PoU") 
+                 values_to="rate") 
   
   data$measure <- factor(data$measure,
-                         levels=c("pou_gap_2015_fao",
-                                  "pou_gap_2015",
-                                  "pou_gap_2030",
-                                  "change_demand_pou",
-                                  "change_supply_pou"))
+                         levels=c("rate_gap_2015_fao",
+                                  "rate_gap_2015",
+                                  "rate_gap_2030",
+                                  "change_demand_rate",
+                                  "change_supply_rate"))
   
   lbls=c(
     "Demand - Supply FAO, 2015",
@@ -946,18 +954,18 @@ plot_pou_change_decomposed_become_insecure <- function(decomposed_change_in_calo
   )
   
   plot <- ggplot(data %>% 
-                   dplyr::select(c(ISO_A3, measure,PoU)), 
-                 aes(measure, PoU,fill=measure))+
+                   dplyr::select(c(ISO_A3, measure,rate)), 
+                 aes(measure, rate,fill=measure))+
     geom_bar(stat="identity")+
     facet_wrap(~ISO_A3) +
     theme(axis.text.x = element_blank(),
           legend.position = "right")+
     scale_fill_discrete(
-      limits=c("pou_gap_2015_fao",
-               "pou_gap_2015",
-               "pou_gap_2030",
-               "change_demand_pou",
-               "change_supply_pou"),
+      limits=c("rate_gap_2015_fao",
+               "rate_gap_2015",
+               "rate_gap_2030",
+               "change_demand_rate",
+               "change_supply_rate"),
       labels=str_wrap(lbls, 10),
       name="Measure"
     ) +
@@ -1020,26 +1028,26 @@ plot_persons_change_decomposed_become_insecure <- function(decomposed_change_in_
                                                            outfile){
   data <- decomposed_change_in_calories %>% 
     dplyr::select(!c("name")) %>% 
-    mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020,
-           pou_gap_2015=calorie_gap_2015/mder_annual_2015,
-           change_demand_pou=change_demand_calories/mder_annual_2020, # instead of 2015/2015?
-           change_supply_pou=change_supply_calories/mder_annual_2020) %>% 
+    mutate(rate_gap_2030=calorie_gap_2030/mder_annual_2020,
+           rate_gap_2015=calorie_gap_2015/mder_annual_2015,
+           change_demand_rate=change_demand_calories/mder_annual_2020, # instead of 2015/2015?
+           change_supply_rate=change_supply_calories/mder_annual_2020) %>% 
     filter(
       ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
     pivot_longer(.,
-                 c("pou_gap_2030",
-                   "pou_gap_2015",
-                   "change_demand_pou",
-                   "change_supply_pou",),
+                 c("rate_gap_2030",
+                   "rate_gap_2015",
+                   "change_demand_rate",
+                   "change_supply_rate",),
                  names_to="measure",
                  values_to="persons") %>% 
     mutate(persons_millions = persons/10^6)
   
   data$measure <- factor(data$measure,
-                         levels=c("pou_gap_2015",
-                                  "pou_gap_2030",
-                                  "change_demand_pou",
-                                  "change_supply_pou"))
+                         levels=c("rate_gap_2015",
+                                  "rate_gap_2030",
+                                  "change_demand_rate",
+                                  "change_supply_rate"))
   
   lbls=c(
     "Demand - Supply, 2015",
@@ -1056,10 +1064,10 @@ plot_persons_change_decomposed_become_insecure <- function(decomposed_change_in_
     theme(axis.text.x = element_blank(),
           legend.position = "right")+
     scale_fill_discrete(
-      limits=c("pou_gap_2015",
-               "pou_gap_2030",
-               "change_demand_pou",
-               "change_supply_pou"),
+      limits=c("rate_gap_2015",
+               "rate_gap_2030",
+               "change_demand_rate",
+               "change_supply_rate"),
       labels=str_wrap(lbls, 10),
       name="Measure"
     ) +
@@ -1070,30 +1078,30 @@ plot_persons_change_decomposed_become_insecure <- function(decomposed_change_in_
   
 }
 
-plot_pou_change_decomposed_remain_insecure <- function(decomposed_change_in_calories,
+plot_rate_change_decomposed_remain_insecure <- function(decomposed_change_in_calories,
                                                        countries_remaining_insecure,
                                                        outfile){
   data <- decomposed_change_in_calories %>% 
     dplyr::select(!c("name")) %>% 
-    mutate(pou_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
-           pou_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
-           change_demand_pou=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
-           change_supply_pou=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
+    mutate(rate_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
+           rate_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
+           change_demand_rate=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
+           change_supply_rate=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
     filter(
       ISO_A3 %in% countries_remaining_insecure$ISO_A3) %>% # outlier that is skewing the bars 
     pivot_longer(.,
-                 c("pou_gap_2030",
-                   "pou_gap_2015",
-                   "change_demand_pou",
-                   "change_supply_pou",),
+                 c("rate_gap_2030",
+                   "rate_gap_2015",
+                   "change_demand_rate",
+                   "change_supply_rate",),
                  names_to="measure",
-                 values_to="PoU") 
+                 values_to="rate") 
   
   data$measure <- factor(data$measure,
-                         levels=c("pou_gap_2015",
-                                  "pou_gap_2030",
-                                  "change_demand_pou",
-                                  "change_supply_pou"))
+                         levels=c("rate_gap_2015",
+                                  "rate_gap_2030",
+                                  "change_demand_rate",
+                                  "change_supply_rate"))
   
   lbls=c(
     "Demand - Supply, 2015",
@@ -1103,17 +1111,17 @@ plot_pou_change_decomposed_remain_insecure <- function(decomposed_change_in_calo
   )
   
   ggplot(data %>% 
-           dplyr::select(c(ISO_A3, measure,PoU)), 
-         aes(measure, PoU,fill=measure))+
+           dplyr::select(c(ISO_A3, measure,rate)), 
+         aes(measure, rate,fill=measure))+
     geom_bar(stat="identity")+
     facet_wrap(~ISO_A3) +
     theme(axis.text.x = element_blank(),
           legend.position = "right")+
     scale_fill_discrete(
-      limits=c("pou_gap_2015",
-               "pou_gap_2030",
-               "change_demand_pou",
-               "change_supply_pou"),
+      limits=c("rate_gap_2015",
+               "rate_gap_2030",
+               "change_demand_rate",
+               "change_supply_rate"),
       labels=str_wrap(lbls, 10),
       name="Measure"
     ) +

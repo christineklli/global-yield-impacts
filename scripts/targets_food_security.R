@@ -99,15 +99,19 @@ targets_food_security <- list(
                World=World
              )
   ),
-  # get FAO 2015 production data for comparison (actually averaged 2014-2016 like in Grogan et al. 2022)
-  tar_target(fao_production_2015_data,
-             read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_production_201416.csv")),
+
   # get FAO to ISO_A2 correspondance
   tar_target(fao_iso2,
              read_iso2_correspondance(
                file="data/Food security data/iso2.csv"
              )),
-  
+  # get FAO 2015 production data for comparison (actually averaged 2014-2016 like in Grogan et al. 2022)
+  tar_target(fao_production_2015_data,
+             {data <- read_csv("data/Food security data/FAOSTAT_data_en_3-29-2023_production_201416.csv")
+             data %>% 
+               mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
+               mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
+             }),
   # compare with FAO data - 
   tar_target(fao_production_2015_check,
              check_baseline_production(
@@ -169,9 +173,28 @@ targets_food_security <- list(
   
   
   # FAO crop allocation data
+  tar_target(fao_crop_allocation_files,
+             {
+               list.files(here(
+                 "data", 
+                 "Food security data",
+                 "FAOSTAT_FBS_staple_201416"), 
+                 pattern="^.*\\.csv$")
+             }
+             
+             ),
   tar_target(fao_crop_allocation_data,
-             read_csv(
-               "data/Food security data/FAOSTAT_data_en_3-28-2023_FBS_staple_201416.csv")
+             {y <- lapply(fao_crop_allocation_files, function(x){
+               read_csv(
+                 
+                 sprintf("data/Food security data/FAOSTAT_FBS_staple_201416/%s",x)
+               )
+               
+             })
+             rbindlist(y) %>% 
+               mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
+               mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
+             }
   ),
   # calculate domestic crop use proportions
   tar_target(fao_crop_allocation_pct,
@@ -222,8 +245,19 @@ targets_food_security <- list(
              )
              ),
   # ascertain that item code 30 is the sum of all the other rice categories
-  tar_target(fao_trade_data,
-             fao_trade_full_data %>% filter(!`Item Code (FAO)` %in% c(32, 28, 29, 31, 27))
+  tar_target(fao_export_data,
+             {data <- fao_trade_full_data %>% 
+               filter(!`Item Code (FAO)` %in% c(32, 28, 29, 31, 27)) %>% 
+               filter(Element=="Export Quantity") %>% 
+               mutate(`Partner Country Code (ISO2)`=ifelse(
+                 `Partner Countries`=="Namibia", 
+                 "NA", 
+                 `Partner Country Code (ISO2)`))
+             
+             data %>% 
+               mutate(Value=ifelse(is.na(Value),0,Value)) 
+             # now append missing Reporter countries as having export quantity == NA or 0?
+             }
              ),
 
   # read in concordance data
@@ -248,7 +282,7 @@ targets_food_security <- list(
   # as crop labels do not match
   tar_target(fao_fbs_trade_checks,
              check_fbs_tm_data(
-               trade_data=fao_trade_data,
+               fao_export_data=fao_export_data,
                fbs_data=fao_crop_allocation_data,
                concord=fao_item_concord,
                outfile="processed/fao_fbs_trade_checks.csv"
@@ -256,7 +290,7 @@ targets_food_security <- list(
   
   tar_target(fao_trade_export,
              process_export_data(
-               trade_data=fao_trade_data,
+               fao_export_data=fao_export_data,
                concord=fao_item_concord,
                fbs_data=fao_crop_allocation_pct
                
@@ -304,7 +338,7 @@ targets_food_security <- list(
   
   tar_target(est_trade_partners,
              calc_export_partner_share(
-               trade_data=fao_trade_data,
+               fao_export_data=fao_export_data,
                est_exports=est_trade_exports,
                concord=fao_item_concord
                
@@ -360,7 +394,15 @@ targets_food_security <- list(
   # calculate feed allocation in tons
   # convert feed calories to food calories
   tar_target(fao_animal_production_data,
-             read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_feed_production_201416.csv")),
+             {
+               data <- read_csv("data/Food security data/FAOSTAT_data_en_3-29-2023_feed_production_201416.csv")
+               data %>% 
+                 mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
+                 mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
+               
+               }
+               
+               ),
   
   tar_target(fao_animal_production_feed,
              {  # sum production per product over the years
@@ -456,7 +498,11 @@ targets_food_security <- list(
   #            }),
   tar_target(fao_all_products_kcal,
              {
-               read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_kcal_201416.csv")
+               data <- read_csv("data/Food security data/FAOSTAT_data_en_3-29-2023_kcal_201416.csv")
+               
+               data %>% 
+                 mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
+                 mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
              }),
   tar_target(fao_staple_share,
              calc_staple_share_calories(
@@ -482,7 +528,14 @@ targets_food_security <- list(
   
   # need average 2015 (2014-2016) population from FAO
   tar_target(fao_population_2015_data,
-             {read_csv("data/Food security data/FAOSTAT_data_en_3-28-2023_population_201416.csv")}),
+             {
+               
+               data <- read_csv("data/Food security data/FAOSTAT_data_en_3-29-2023_population_201416.csv")
+               data %>% 
+                 mutate(Value=ifelse(is.na(Value),0,Value)) %>% 
+                 mutate(`Area Code (ISO2)`=ifelse(Area=="Namibia","NA",`Area Code (ISO2)`))
+               
+               }),
   
   tar_target(fao_population_2015,
              calc_pop_2015(
@@ -567,9 +620,9 @@ targets_food_security <- list(
   # count frequ
   tar_target(freq_FI_status_change,
              {
-               lvls <- unique(unlist(change_in_pou_rate$FI_status_change))
+               lvls <- unique(unlist(calorie_gap_change$FI_status_change))
                
-               freq <- sapply(change_in_pou_rate,
+               freq <- sapply(calorie_gap_change,
                               function(x) table(factor(x, levels = lvls,
                                                        ordered=TRUE)))
              }),
@@ -583,11 +636,11 @@ targets_food_security <- list(
   ),
   # heat map of change in PoU rate 
   # increase in the proportion of food insecure persons (as a percentage point increase)
-  tar_target(pou_rate_change_capped_plot,
-             plot_pou_rate_change_capped(
+  tar_target(rate_change_capped_plot,
+             plot_rate_change_capped(
                calorie_gap_change=calorie_gap_change,
                World=World,
-               outfile="results/figures/food security/pou_rate_change_capped.png"
+               outfile="results/figures/food security/rate_change_capped.png"
              )
   ),
   
@@ -616,11 +669,11 @@ targets_food_security <- list(
              }),
   # plot
   # have to join this data with population data and mder data
-  tar_target(pou_change_decomposed_become_insecure_plot,
-             plot_pou_change_decomposed_become_insecure(
+  tar_target(rate_change_decomposed_become_insecure_plot,
+             plot_rate_change_decomposed_become_insecure(
                decomposed_change_in_calories=decomposed_change_in_calories,
                countries_becoming_insecure=countries_becoming_insecure,
-               outfile="results/figures/food security/pou_change_decomposed_become_insecure.png"
+               outfile="results/figures/food security/rate_change_decomposed_become_insecure.png"
              )
   ),
   tar_target(calorie_gap_decomposed_become_insecure_plot,
@@ -641,11 +694,11 @@ targets_food_security <- list(
              )
   ),
   
-  tar_target(pou_change_decomposed_remain_insecure_plot,
-             plot_pou_change_decomposed_remain_insecure(
+  tar_target(rate_change_decomposed_remain_insecure_plot,
+             plot_rate_change_decomposed_remain_insecure(
                decomposed_change_in_calories=decomposed_change_in_calories,
                countries_remaining_insecure=countries_remaining_insecure,
-               outfile="results/figures/food security/pou_change_decomposed_remain_insecure.png"
+               outfile="results/figures/food security/rate_change_decomposed_remain_insecure.png"
              )
   )
 )
