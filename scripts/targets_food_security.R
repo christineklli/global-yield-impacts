@@ -38,13 +38,24 @@ targets_food_security <- list(
   # this is a time series from 2000-2020 so take only 2020?
   # also variable is kcal/person/day, multiply by 365 for annual kcal per capita needs?
   # join pop and mder data
+  # add average daily energy requirements
+  # there are some NAs
+  tar_target(ader_data,
+             read_csv(here("data", "Food security data", "FAOSTAT_data_en_4-1-2023_ader.csv"))),
+  
   tar_target(country_pop_mder_future,
              calc_country_mder(
                mder_data = mder_data,
                pop_data = pop_country_future_worldmap
              ) # 194-177=17 countries will not have population information
   ),
-  
+  tar_target(country_pop_ader_future,
+             calc_country_ader(
+               ader_data = ader_data,
+               pop_data = pop_country_future_worldmap,
+               worldmap_clean=worldmap_clean
+             ) # 194-177=17 countries will not have population information
+  ),
   
   # read in grogan data  ----------------------------------------------------
   
@@ -520,7 +531,7 @@ targets_food_security <- list(
              calc_future_food_gap(
                future_total_calories=future_total_calories,
                worldmap_clean=worldmap_clean,
-               country_pop_mder=country_pop_mder_future
+               country_pop_mder=country_pop_ader_future
              )
   ),
   tar_target(global_food_gap, # this needs to be redone 
@@ -542,7 +553,7 @@ targets_food_security <- list(
   tar_target(future_calorie_gap,
              calc_future_calorie_gap(
                future_food_gap=future_food_gap,
-               country_pop_mder=country_pop_mder_future,
+               country_pop_mder=country_pop_ader_future,
                fao_staple_share=fao_staple_share
              )
   ),
@@ -591,11 +602,19 @@ targets_food_security <- list(
              )
              
   ),
+  tar_target(country_pop_ader_2015,
+             calc_country_pop_ader_2015(
+               ader_data=ader_data,
+               fao_population_2015=fao_population_2015,
+               worldmap_clean=worldmap_clean
+             )
+             
+  ),
   
   tar_target(baseline_2015_calorie_gap,
              calc_baseline_calorie_gap(
                baseline_2015_calories_by_crop=baseline_2015_calories_by_crop,
-               country_pop_mder_2015=country_pop_mder_2015,
+               country_pop_mder_2015=country_pop_ader_2015,
                fao_staple_share=fao_staple_share
              )
              
@@ -616,7 +635,7 @@ targets_food_security <- list(
              check_est_fao_calorie_gap(
                comparison_2015_calories_supply=comparison_2015_calories_supply,
                worldmap_clean=worldmap_clean,
-               country_pop_mder_2015=country_pop_mder_2015,
+               country_pop_mder_2015=country_pop_ader_2015,
                outfile="processed/comparison_2015_calorie_gap.csv"
              )
   ),
@@ -722,8 +741,7 @@ targets_food_security <- list(
                decomposed_change_in_calories=decomposed_change_in_calories,
                countries_becoming_insecure=countries_becoming_insecure_2030,
                time="2021-2040",
-               label="Demand - Supply, 2030",
-               limit="rate_gap_2030",
+               label_future="Demand - Supply, 2030",
                outfile="results/figures/food security/rate_change_become_insecure_RCP8.5.png"
              )
   )
