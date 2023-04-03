@@ -392,15 +392,22 @@ targets_food_security <- list(
   ),
   
   # check and compare baseline estimated/imputed imports/exports and FAO imports/exports
-  tar_target(baseline_import_export_checks,
-             
-             check_baseline_import_export(
-               data=fao_import_export_2015,
+  # tar_target(baseline_import_export_checks,
+  #            
+  #            check_baseline_import_export(
+  #              data=fao_import_export_2015,
+  #              est_imports=est_trade_imports,
+  #              est_exports=est_trade_exports,
+  #              outfile="processed/baseline_import_export_checks.csv"
+  #            )
+  # ),
+  # check baseline supply
+  tar_target(baseline_supply_checks,
+             check_baseline_supply(
+               data=fao_crop_allocation_data,
                est_imports=est_trade_imports,
-               est_exports=est_trade_exports,
-               outfile="processed/baseline_import_export_checks.csv"
-             )
-  ),
+               est_exports=est_trade_exports
+             )),
   
   
   # calculate calorie conversions -------------------------------------------
@@ -497,7 +504,18 @@ targets_food_security <- list(
                grazing_income_group=grazing_income_group
              )
   ),
-  
+  # create a crop/feed calorie conversion that's suitable for joining long
+  tar_target(calorie_conversion_by_element,
+             {
+               df <- merge(fao_country_feed_calories, crop_calorie_conversion, all=TRUE)
+               
+               df %>% as_tibble() %>% 
+                 rename(Food = crop_conversion,
+                        Feed = feed_conversion) %>% 
+                 pivot_longer(., cols=c(Food, Feed),
+                              names_to = "Element",
+                              values_to = "Conversion")
+             }),
   
   # calculate future food gap -----------------------------------------------
   
@@ -516,8 +534,7 @@ targets_food_security <- list(
   tar_target(future_calories,
              calc_total_future_calories(
                fao_future_food_supply=fao_future_food_supply,
-               fao_country_feed_calories=fao_country_feed_calories,
-               crop_calorie_conversion=crop_calorie_conversion
+               calorie_conversion_by_element=calorie_conversion_by_element
              )
              
   ),
@@ -691,6 +708,13 @@ targets_food_security <- list(
                outfile="results/figures/food security/calorie_gap_persons_future_RCP8.5.png"
              )
   ),
+  tar_target(calorie_gap_rate_future_map,
+             map_calorie_gap_rate(
+               data=future_calorie_gap,
+               World=world,
+               outfile="results/figures/food security/calorie_gap_rate_future_RCP8.5.png"
+             )
+  ),
   # heat map of just the four categorical variables of FI status change
   tar_target(FI_status_change_map,
              plot_FI_status_change(
@@ -744,7 +768,19 @@ targets_food_security <- list(
                label_future="Demand - Supply, 2030",
                outfile="results/figures/food security/rate_change_become_insecure_RCP8.5.png"
              )
-  )
+  ),
+  
+  # change in supply in persons/population
+  tar_target(change_supply_rate_map,
+             map_change_supply_rate(
+               future_calorie_gap=future_calorie_gap,
+               baseline_2015_calorie_gap=baseline_2015_calorie_gap,
+               World=World,
+               outfile="results/figures/food security/change_supply_rate_map_RCP8.5.png"
+               
+             ))
+  
+  
   # tar_target(calorie_gap_become_insecure_plot,
   #            plot_calorie_gap_become_insecure(
   #              decomposed_change_in_calories=decomposed_change_in_calories,
