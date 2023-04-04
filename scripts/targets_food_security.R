@@ -584,8 +584,7 @@ targets_food_security <- list(
              calc_baseline_calories_by_crop(
                country_baseline_future_production_df=country_baseline_future_production_df,
                fao_crop_allocation_multiyear=fao_crop_allocation_multiyear,
-               fao_country_feed_calories=fao_country_feed_calories,
-               crop_calorie_conversion=crop_calorie_conversion,
+               calorie_conversion_by_element=calorie_conversion_by_element,
                est_imports=est_trade_imports,
                est_exports=est_trade_exports,
                crops=crops
@@ -778,7 +777,17 @@ targets_food_security <- list(
                World=World,
                outfile="results/figures/food security/change_supply_rate_map_RCP8.5.png"
                
-             ))
+             )),
+  # map change in supply in % terms from baseline supply
+  tar_target(change_supply_pct_map,
+             map_change_supply_pct(
+               future_calorie_gap=future_calorie_gap,
+               baseline_2015_calorie_gap=baseline_2015_calorie_gap,
+               World=World,
+               outfile="results/figures/food security/change_supply_pct_map_RCP8.5.png"
+               
+             )
+             )
   
   
   # tar_target(calorie_gap_become_insecure_plot,
