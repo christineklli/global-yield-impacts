@@ -679,7 +679,8 @@ process_animal_feed_data <- function(animal_production_data,
 calc_total_future_calories <- function(fao_future_food_supply,
                                        calorie_conversion_by_element){
   fao_future_food_supply %>% 
-    filter(Element %in% c("Feed", "Food")) %>% 
+    #filter(Element %in% c("Feed", "Food")) %>% 
+    filter(Element %in% c("Food")) %>% 
     left_join(calorie_conversion_by_element, 
               by=c("Partner Country Code (ISO2)"="Area Code (ISO2)",
                                               "Item (FBS)",
@@ -738,12 +739,12 @@ calc_staple_share_calories <- function(fao_all_products_kcal,
       "Maize and products",
       "Rice and products",
       "Soyabeans",
-      "Wheat and products",
-      "Bovine Meat",
-      "Pigmeat",
-      "Poultry Meat",
-      "Eggs",
-      "Milk - Excluding Butter"
+      "Wheat and products"#,
+      # "Bovine Meat",
+      # "Pigmeat",
+      # "Poultry Meat",
+      # "Eggs",
+      # "Milk - Excluding Butter"
     )) %>%
     # summarise new column sum of these products
     # then mutate another column to calculate the share for each country
@@ -802,7 +803,8 @@ calc_baseline_calories_by_crop <- function(country_baseline_future_production_df
     
     left_join(dplyr::select(fao_crop_allocation_multiyear, `Area Code (ISO2)`, Item, `Item Code (CPC)`, Element, Prop), 
               by=c("iso_a2"="Area Code (ISO2)", "Item")) %>% 
-    filter(Element %in% c("Feed", "Food")) %>% 
+    #filter(Element %in% c("Feed", "Food")) %>% 
+    filter(Element %in% c("Food")) %>% 
     # left_join(dplyr::select(fao_country_feed_calories, feed_conversion, `Area Code (ISO2)`), by=c("iso_a2"="Area Code (ISO2)")) %>% 
     # left_join(crop_calorie_conversion, by=c("Item"="Item (FBS)")) %>% # need to left join import quantities in 2015 from FAO
     # # left_join(fao_import_export_2015,
@@ -1278,7 +1280,7 @@ map_change_supply_pct <- function(future_calorie_gap,
                                  by=c("ISO_A3")) %>% 
     mutate(supply_change = calories_supply_total_2015 - calories_supply_total_future,
            supply_change_pct = supply_change/calories_supply_total_2015,
-           supply_change_pct = ifelse(supply_change_pct < 0, NA, supply_change_pct))
+           supply_change_pct = ifelse(supply_change_pct < 0, 0, supply_change_pct))
   
   dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
   
@@ -1288,10 +1290,10 @@ map_change_supply_pct <- function(future_calorie_gap,
             #palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
             #palette=c("yellowgreen", "lightyellow","khaki1","orange"),
             # note that some countries exceed this such as Ukraine
-            palette=c("lightyellow","khaki1","orange","red3", "brown"), 
+            palette=c("lightyellow","khaki1","orange","red3", "brown", "purple"), 
             #breaks=c(-1.0,-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4),
             # breaks=c(0,0.015, 0.175, 0.255, 0.365, 0.526),
-            midpoint=0,
+            midpoint=NA,
             title= 'Reduction in supply from 2015 (%)') +
     tm_facets(c("time_period"), drop.NA.facets=T) +
     tmap::tm_shape(World) +
