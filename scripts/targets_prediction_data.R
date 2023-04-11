@@ -196,7 +196,7 @@ targets_prediction_data_cmip <- list(
   tar_target(prediction_data_complete_cases,
              clean_prediction_data(
                data=prediction_data
-             ))
+             )),
   # skip above target and do this in same step as write out
   # tar_target(prediction_data_complete,
   #            {sapply(GCMs, 
@@ -215,6 +215,17 @@ targets_prediction_data_cmip <- list(
   #                         pattern = ".RData")
   #            },
   #            format = "file")
+  
+  # write out output files for input into cloned RCP 4.5 and 2.6 projects
+  tar_target(write_tmp_mean_2015, 
+             saveRDS(tmp_mean_2015, "processed/tmp_mean_2015.rds")),
+  tar_target(write_pre_mean_2015,
+             saveRDS(pre_mean_2015, "processed/pre_mean_2015.rds")),
+  tar_target(write_bs_2015_vars,
+             saveRDS(bs_2015_vars, "processed/bs_2015_vars.rds")),
+  # this is from targets_prediction.R but has already been built
+  tar_target(write_data_current,
+             saveRDS(data_current, "processed/data_current.rds"))
   
   
 )
