@@ -223,9 +223,20 @@ targets_prediction_data_cmip <- list(
              saveRDS(pre_mean_2015, "processed/pre_mean_2015.rds")),
   tar_target(write_bs_2015_vars,
              saveRDS(bs_2015_vars, "processed/bs_2015_vars.rds")),
+  tar_target(write_coords_countries,
+             saveRDS(coords_countries, "processed/coords_countries.rds")),
+  tar_target(write_World,
+             saveRDS(World, "processed/World.rds")),
+  tar_target(write_crops,
+             saveRDS(crops, "processed/crops.rds")),
   # this is from targets_prediction.R but has already been built
   tar_target(write_data_current,
-             saveRDS(data_current, "processed/data_current.rds"))
+             saveRDS(data_current, "processed/data_current.rds")),
+  # this is from targets_data.R but has already been built
+  tar_target(write_crop_production_rasters,
+             saveRDS(crop_production_rasters, "processed/crop_production_rasters.rds")),
+  tar_target(write_worldmap_clean,
+             saveRDS(worldmap_clean, "processed/worldmap_clean.rds"))
   
   
 )
