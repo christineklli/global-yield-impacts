@@ -993,10 +993,10 @@ calc_calorie_gap_change <- function(future_calorie_gap,
   
   data <- baseline %>% left_join(future,
                                  by=c("ISO_A3")) %>% 
-    mutate(FI_status_change = case_when(FI_status_2015==0 & FI_status_future==1 ~ "become insecure",
-                                        FI_status_2015==0 & FI_status_future==0 ~ "remain secure",
-                                        FI_status_2015==1 & FI_status_future==1 ~ "remain insecure",
-                                        FI_status_2015==1 & FI_status_future==0 ~ "become secure"))
+    mutate(FI_status_change = case_when(FI_status_2015==0 & FI_status_future==1 ~ "Become at risk of not meeting national calorie demand",
+                                        FI_status_2015==0 & FI_status_future==0 ~ "Remain able to meet national calorie demand",
+                                        FI_status_2015==1 & FI_status_future==1 ~ "Remain unable to meet national calorie demand",
+                                        FI_status_2015==1 & FI_status_future==0 ~ "Become able to meet national calorie demand"))
   
   data %>% write_csv(outfile)
   
@@ -1065,14 +1065,16 @@ plot_FI_status_change <- function(calorie_gap_change,
   
   plot <- tmap::tm_shape(dat) +
     tm_fill("FI_status_change",
-            palette = c("orange", "black","red3","darkgreen"),
+            palette = c("yellowgreen", "orange","darkgreen","red3"),
             #palette=c("orange","lightgreen","red3","darkgreen"),
             title= 'Status change since 2015') +
     tm_facets(c("time_period"), drop.NA.facets=T) +
     tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
+    tmap::tm_borders("grey", lwd =1) +
+    tm_layout(legend.outside=TRUE,
+              legend.outside.position = c("bottom"))
   
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
+  tmap::tmap_save(plot, filename=outfile, height=4, width=5, asp=0)
   plot
 }
 
@@ -1297,9 +1299,11 @@ map_change_supply_pct <- function(future_calorie_gap,
             title= 'Reduction in supply from 2015 (%)') +
     tm_facets(c("time_period"), drop.NA.facets=T) +
     tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
+    tmap::tm_borders("grey", lwd =1) +
+    tm_layout(legend.outside=TRUE,
+              legend.outside.position = c("bottom"))
   
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
+  tmap::tmap_save(plot, filename=outfile, height=4, width=5, asp=0)
   plot
   
   
