@@ -164,6 +164,37 @@ extract_bs_2015_tmp_pre <- function(data){
   group_split(crop_pooled)
 }
 
+# rasterise and plot bs 2015 tmp and pre by crop
+
+plot_bs_2015_tmp_pre <- function(data, var, World, title, palette, outfile){
+ 
+  x <- lapply(1:4, function(i){
+    x <- data[[i]] %>% 
+      dplyr::select(c(lon, lat, eval(var)))
+    
+    rasterFromXYZ(x)
+  })
+  
+  y <- stack(x)
+ 
+  plot <- tmap::tm_shape(y) +
+    tmap::tm_raster(palette=palette, 
+            midpoint=NA,
+            title= title) +
+    tmap::tm_facets() +
+    tmap::tm_shape(World) +
+    tmap::tm_borders("grey", lwd =1) +
+    tmap::tm_layout(legend.outside=TRUE,
+              legend.outside.position = c("right"),
+              panel.labels=c("Maize","Rice","Soybean","Wheat"))
+  
+ tmap::tmap_save(plot, filename=outfile, height=4, width=7, asp=0)
+  plot
+  
+}
+
+
+
 # rasterise and stack monfreda yields data
 
 rasterise_crop_yield_monf <- function(files){

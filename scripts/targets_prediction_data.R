@@ -76,9 +76,32 @@ targets_prediction_data_cru <- list(
   tar_target(bs_2015_tmp_pre_list,
              extract_bs_2015_tmp_pre(
                data=bs_years_tmp_pre
+             )),
+  # plot baseline 2015 tmp faceted by crop
+  tar_target(bs_2015_tmp_plot,
+             plot_bs_2015_tmp_pre(
+               data=bs_2015_tmp_pre_list,
+               var="bs_gs_tmp",
+               title='Temperature (°C)',
+               palette='YlOrBr',
+               World=World,
+               outfile="processed/bs_2015_tmp.png"
+             )),
+  
+  # plot baseline 2015 pre faceted by crop
+  tar_target(bs_2015_pre_plot,
+             plot_bs_2015_tmp_pre(
+               data=bs_2015_tmp_pre_list,
+               var="bs_gs_pre",
+               title='Precipitation (mm)',
+               palette='BrBG',
+               World=World,
+               outfile="processed/bs_2015_pre.png"
              ))
   
 )
+
+
 
 # create yield data
 # note that script 13 in agimpacts-precip has lots of different yield datasets

@@ -123,3 +123,34 @@ create_global_predictions_tbl <- function(predictions,
     rbindlist() %>% 
     readr::write_csv(sprintf(path))
 }
+
+
+rasterise_conf_gridded <- function(predictions, time_periods, var){ # predictions_nested - this produces a raster stack?
+  lapply(1:5, function(model){ 
+    lapply(1:4, function(crop){  
+      
+      x <- predictions[[model]][[crop]]
+      
+      x_list <- lapply(1:4, function(i){
+        
+        r <- x %>% filter(time_period==time_periods[[i]]) %>% 
+          dplyr::select(c("lon","lat",!!sym(var))) # quasiquotation can only be used in tidyverse functions
+        
+        #x[x$time_period==time_periods[[i]], c("lon", "lat", var] 
+        r <- raster::rasterFromXYZ(r)
+        crs(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0" 
+        names(r) <- time_periods[[i]]
+        r
+      })
+      
+      raster::stack(x_list)
+      
+    })
+    
+    # these don't span entire globe? ymin -55 only not -90!!?
+    # terra::rast(r_2021_2040, "xyz") throws an error
+    #https://future.futureverse.org/articles/future-4-non-exportable-objects.html#packages-that-rely-on-external-pointers
+  }) 
+  
+  
+}

@@ -168,6 +168,12 @@ targets_model_gam_glm <- list(
                predictions=adj_grouped_lines_tbl,
                path="results/figures/adj_all_response_function_plots.png"
              )),
+  tar_target(adj_all_response_functions_plots_with_data,
+             plot_all_response_functions_with_data(
+               predictions=adj_grouped_lines_tbl,
+               data=AGIMPACTS_bs,
+               path="results/figures/adj_all_response_function_plots_with_data.png"
+             )),
   
   tar_target(lit_responses_1k, # per temperature degree estimates of yield impact
              {lit <- dplyr::tribble(

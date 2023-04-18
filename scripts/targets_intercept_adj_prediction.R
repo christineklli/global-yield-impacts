@@ -235,6 +235,41 @@ tar_target(adj_predictions_global_wt_mean,
              model_spec_alphabetical=model_spec_alphabetical,
              crops=crops,
              path="results/tables/adjusted/adjusted_global_weighted_predictions.csv"
+           )),
+
+# adjusted raster of lwr_p and upr_p
+tar_target(adj_lwr_gridded_raster, # list of 20 rasters
+           rasterise_conf_gridded(
+             predictions=adj_predictions_nested,
+             time_periods=time_periods,
+             var="lwr_p"
+           )),
+tar_target(adj_upr_gridded_raster, # list of 20 rasters
+           rasterise_conf_gridded(
+             predictions=adj_predictions_nested,
+             time_periods=time_periods,
+             var="upr_p"
+           )),
+
+# calculate global production weighted predictions of lwr_p and upr_p
+tar_target(adj_lwr_global_wt_mean,
+           create_global_predictions_tbl(
+             predictions=adj_lwr_gridded_raster,
+             crop_production_raster_agg=crop_production_raster_agg,
+             worldmap_clean=worldmap_clean,
+             model_spec_alphabetical=model_spec_alphabetical,
+             crops=crops,
+             path="results/tables/adjusted/adjusted_global_weighted_lwr.csv"
+           )),
+tar_target(adj_upr_global_wt_mean,
+           create_global_predictions_tbl(
+             predictions=adj_upr_gridded_raster,
+             crop_production_raster_agg=crop_production_raster_agg,
+             worldmap_clean=worldmap_clean,
+             model_spec_alphabetical=model_spec_alphabetical,
+             crops=crops,
+             path="results/tables/adjusted/adjusted_global_weighted_upr.csv"
            ))
+
 
 )
