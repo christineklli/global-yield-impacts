@@ -1,4 +1,5 @@
 
+# wrangle Olen and Lehsten et al. 2022 gridded pouplation data
 rasterise_pop_10km_file <- function(file, 
                                     outfile){# somehow terra::rast results in Error: external pointer is not valid
   
@@ -44,6 +45,31 @@ calc_pop <- function(file){
                  names_to="time_period",
                  values_to="pop_future")
 }
+
+# calc IIASA data into time periods
+
+split_pop_data <- function(file, ssp, worldmap_clean){
+  file %>% 
+    dplyr::filter(Scenario==ssp) %>% 
+    dplyr::select(!c("Model", "Variable", "Unit", "Notes", "Scenario")) %>% 
+    rowwise() %>% 
+    mutate(`2021-2040`=mean(c(`2020.0`, `2025.0`, `2030.0`, `2035.0`, `2040.0`), na.rm=T),
+           `2041-2060`=mean(c(`2040.0`, `2045.0`, `2050.0`, `2055.0`, `2060.0`), na.rm=T),
+           `2061-2080`=mean(c(`2060.0`, `2065.0`, `2070.0`, `2075.0`, `2080.0`), na.rm=T),
+           `2081-2100`=mean(c(`2080.0`, `2085.0`, `2090.0`, `2095.0`, `2100.0`), na.rm=T)) %>% 
+    dplyr::select(!c(`2010.0`:`2100.0`)) %>% 
+    pivot_longer(cols=c(`2021-2040`:`2081-2100`),
+                 names_to="time_period",
+                 values_to="pop_future") %>% 
+      mutate(pop_future=pop_future*10^6) %>% # now expressed in persons not millions
+      left_join(dplyr::select(as.data.frame(worldmap_clean), ISO_A3, NAME),
+                by=c("Region"="ISO_A3")) %>%
+      rename(iso_a3=Region,
+             name=NAME)
+    
+    
+}
+
 
 calc_country_mder <- function(mder_data, pop_data){
   

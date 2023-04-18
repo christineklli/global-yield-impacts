@@ -15,6 +15,7 @@ targets_food_security <- list(
   
   # read in future population data  ----------------------------------------
   
+  ## use option 1: Olen and Lehsten et al. 2022 gridded population data
   
   tar_target(pop_10km_file,
              {here("data", "Food security data", "RCP8.5_10000m.tif")}),
@@ -31,6 +32,22 @@ targets_food_security <- list(
   tar_target(pop_country_future_worldmap, # 177 countries ("name_long")
              calc_pop(pop_10km_raster_file)
   ),
+  
+  
+  ## use option 2: IIASA 2013 V.2 country level population data
+  tar_target(pop_country_file,
+             {
+             readxl::read_xlsx(here("data", "Food security data", "iamc_db.xlsx"))
+               }),
+  tar_target(pop_country_future,
+             split_pop_data(
+               file=pop_country_file,
+               ssp="SSP5",
+               worldmap_clean=worldmap_clean
+             )
+             ),
+
+
   # join to iso_a3 (which should match mder three-digit Code)
   # minimum daily energy requirements
   tar_target(mder_data,
@@ -46,13 +63,13 @@ targets_food_security <- list(
   tar_target(country_pop_mder_future,
              calc_country_mder(
                mder_data = mder_data,
-               pop_data = pop_country_future_worldmap
+               pop_data = pop_country_future
              ) # 194-177=17 countries will not have population information
   ),
   tar_target(country_pop_ader_future,
              calc_country_ader(
                ader_data = ader_data,
-               pop_data = pop_country_future_worldmap,
+               pop_data = pop_country_future,
                worldmap_clean=worldmap_clean
              ) # 194-177=17 countries will not have population information
   ),
