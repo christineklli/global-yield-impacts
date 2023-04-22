@@ -118,6 +118,27 @@ calc_country_pop_ader_2015 <- function(ader_data,
 } # 194-177=17 countries will not have population information
 
 
+select_lm_predictions <- function(predictions){
+  df <- predictions %>% 
+    filter(model=="lm" & time_period %in% c("2021-2040",
+                                                "2041-2060",
+                                                "2061-2080",
+                                                "2081-2100")) %>% 
+    dplyr::select(c("lon","lat","pred_bar", "crop_pooled", "time_period")) 
+  
+  # split into three level nested list
+  
+  df <- split(df, df$time_period)
+  
+  lapply(1:4, function(i){
+    df <- split(df[[i]], df[[i]]$crop_pooled)
+    lapply(1:4, function(j){df[[j]] %>% dplyr::select(!c("crop_pooled", "time_period"))
+    })
+    
+  })
+  
+}
+
 
 format_predictions <- function(predictions){
   df <- predictions %>% 

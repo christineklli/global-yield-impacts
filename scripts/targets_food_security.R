@@ -16,23 +16,23 @@ targets_food_security <- list(
   # read in future population data  ----------------------------------------
   
   ## use option 1: Olen and Lehsten et al. 2022 gridded population data
-  
-  tar_target(pop_10km_file,
-             {here("data", "Food security data", "RCP8.5_10000m.tif")}),
-  tar_target(pop_10km_data,
-             rasterise_pop_10km_file(
-               file=pop_10km_file,
-               outfile="processed/pop_10km_data_RCP8.5.tif"
-             )
-  ), 
-  tar_target(pop_10km_raster_file,
-             {pop_10km_data},
-             format="file"),
-  
-  tar_target(pop_country_future_worldmap, # 177 countries ("name_long")
-             calc_pop(pop_10km_raster_file)
-  ),
-  
+  # 
+  # tar_target(pop_10km_file,
+  #            {here("data", "Food security data", "RCP8.5_10000m.tif")}),
+  # tar_target(pop_10km_data,
+  #            rasterise_pop_10km_file(
+  #              file=pop_10km_file,
+  #              outfile="processed/pop_10km_data_RCP8.5.tif"
+  #            )
+  # ), 
+  # tar_target(pop_10km_raster_file,
+  #            {pop_10km_data},
+  #            format="file"),
+  # 
+  # tar_target(pop_country_future_worldmap, # 177 countries ("name_long")
+  #            calc_pop(pop_10km_raster_file)
+  # ),
+  # 
   
   ## use option 2: IIASA 2013 V.2 country level population data
   tar_target(pop_country_file,

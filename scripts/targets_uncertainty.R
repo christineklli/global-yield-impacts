@@ -368,5 +368,14 @@ targets_uncertainty <- list(
       path="results/figures/adjusted_bootstrap_distributions_2081.png"
     )
     
+  ),
+  # faceted into grid
+  # plot distributions folding in gcm
+  tar_target(
+    plot_bootstrap_distributions_2081_grid,
+    plot_bootstrap_distributions_grid(
+      predictions=block_bootstrap_predictions_crop_list,
+      path="results/figures/adjusted_bootstrap_distributions_2081_grid.png"
+    )
   )
 )

@@ -275,31 +275,61 @@ plot_cv <- function(data, path){
   
 }
 
-# this is not very informative so leave this out, mean RMSE is better
+
 plot_all_m_cv <- function(data, path){
   
   dat <- data %>% 
     mutate(`Model ID`=as.factor(`Model ID`)) %>% 
     mutate(crop_no=as.factor(crop_no))
   
+  mean_rmse <- data %>% 
+    group_by(crop_no, `Model ID`, Dependent, Fixed) %>% 
+    summarise(mean_RMSE=mean(RMSE),
+              mean_MAE=mean(MAE))  %>% 
+    mutate(`Model ID`=as.factor(`Model ID`)) %>% 
+    mutate(crop_no=as.factor(crop_no))
+  
+  
+  dat <- dat %>% left_join(mean_rmse, by=c("crop_no", "Model ID"))
+  
+  crop.labs <- c("Maize","Rice","Soy","Wheat")
+  names(crop.labs) <- c(1:4)
+  
   plot <- ggplot(data=dat) +
     geom_point(
-      aes(x=crop_no, y=RMSE,
-          col=`Model ID`), size = 4, alpha=0.5) +
+      aes(x=`Model ID`, y=RMSE,
+           col=`Model ID`), size = 2, alpha=0.5) +
+  # add mean RMSE
+    geom_point(
+      aes(x=`Model ID`, y=mean_RMSE), 
+      col="black", shape=21, size = 2, alpha=1) +
+    # scale_shape_discrete(
+    #   name="Model ID",
+    #   labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
+    #   breaks=c("1","2","3","4","5")
+    # ) +
+    facet_wrap(~crop_no, ncol=4,
+               labeller=labeller(crop_no=crop.labs)
+               ) +
     scale_colour_discrete(
       name="Model ID",
-      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-      breaks=c("1","2","3","4","5")
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")#,
+      #breaks=c("1","2","3","4","5")
     ) +
     labs(y="Mean Model RMSE from k-fold CV") +
-    scale_x_discrete(name="Crop",
-                     labels=c("Maize","Rice","Soy","Wheat"),
-                     breaks=c("1","2","3","4")) 
-  
+    theme(axis.title.x=element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks = element_blank()
+          )
+    # scale_x_discrete(name="Model ID",
+    #                  labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
+    #                  breaks=c("1","2","3","4","5")) 
+  # add mean RMSE across m
+
   ggplot2::ggsave(filename=path,
                   plot=plot,
                   width=7, height=6)
-  
+
   plot
-  
+  # 
 }

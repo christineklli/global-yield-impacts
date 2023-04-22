@@ -5,7 +5,12 @@ create_crop_production_df <- function(raster){
       raster[[crop]]
     ) %>% 
       as.data.frame() %>% 
-      rename(production=3)
+      rename(production=3) %>% 
+      # so that they will round and left join with predictions
+      mutate(x = round(x,2),
+             y = round(y,2))
+    
+    
   })
 }
 
@@ -364,6 +369,65 @@ plot_bootstrap_distributions <- function(predictions, path){
                    axis.title.x = element_blank()) +
       labs(subtitle="Wheat"),
     ncol=4,
+    align="v"
+  )
+  
+  legend <- ggpubr::get_legend(p[[1]] + theme(legend.box.margin=margin(0,0,0,12)))
+  x.grob <- grid::textGrob("Global production-weighted mean yield change (%)",
+                           gp=gpar(fontsize=13))
+  y.grob <- grid::textGrob("density",
+                           gp=gpar(fontsize=13))
+  
+  
+  plot <- gridExtra::grid.arrange(arrangeGrob(p_grid, right=legend, left=y.grob, bottom=x.grob))
+  
+  
+  outfile <- sprintf(path)
+  
+  ggsave(outfile, plot, width=8, height=4)
+  
+  
+}
+
+
+plot_bootstrap_distributions_grid <- function(predictions, path){
+  
+  
+  p <- lapply(1:4, function(i){
+    predictions[[i]] %>%
+      ggplot(
+        aes(x=weighted_mean,
+            group=interaction(
+              model_spec,
+              imputation,
+              #gcm,
+              crop
+            ),
+            col=model_spec)
+      ) +
+      geom_density(alpha=0.1,
+                   linewidth=0.1) +
+      theme_bw()
+  })
+  
+  p_grid <- cowplot::plot_grid(
+    p[[1]] + theme(legend.position="none",
+                   axis.title.y = element_blank(),
+                   axis.title.x = element_blank()) +
+      labs(subtitle="Maize"),
+    p[[2]] + theme(legend.position="none",
+                   axis.title.y = element_blank(),
+                   axis.title.x = element_blank()) +
+      labs(subtitle="Rice"),
+    p[[3]] + theme(legend.position="none",
+                   axis.title.y = element_blank(),
+                   axis.title.x = element_blank()) +
+      labs(subtitle="Soybean"),
+    p[[4]] + theme(legend.position="none",
+                   axis.title.y = element_blank(),
+                   axis.title.x = element_blank()) +
+      labs(subtitle="Wheat"),
+    ncol=2,
     align="v"
   )
   
