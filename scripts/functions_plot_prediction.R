@@ -82,18 +82,52 @@ create_crop_production_raster_agg <- function(crop_production_rasters){
 }
 
 # may need to recalculate this with area-weighting!
-create_country_predictions_tbl <- function(predictions, crop_production_raster_agg, worldmap_clean, model_spec_alphabetical, crops, path){
+create_country_predictions_tbl <- function(predictions, 
+                                           lwr_bound,
+                                           upr_bound,
+                                           crop_production_raster_agg, 
+                                           worldmap_clean, 
+                                           model_spec_alphabetical, 
+                                           crops, 
+                                           path){
   lapply(1:5, function(model){ #
     lapply(1:4, function(crop){ # time period
       
+      # central estimate
       prediction <- exactextractr::exact_extract(predictions[[model]][[crop]], # this is a stack
                                                  worldmap_clean, 
                                                  'weighted_mean', 
                                                  weights = crop_production_raster_agg[[crop]]) 
+      # lwr bound 5% 
+      lwr <- exactextractr::exact_extract(lwr_bound[[model]][[crop]], # this is a stack
+                                          worldmap_clean, 
+                                          'weighted_mean', 
+                                          weights = crop_production_raster_agg[[crop]]) 
+      
+      # upper bound 95% 
+      
+      upr <- exactextractr::exact_extract(upr_bound[[model]][[crop]], # this is a stack
+                                          worldmap_clean, 
+                                          'weighted_mean', 
+                                          weights = crop_production_raster_agg[[crop]]) 
       
       tbl <- data.frame(ADMIN=worldmap_clean@data$ADMIN,
                         ISO_A2=worldmap_clean@data$ISO_A2,
-                        prediction)
+                        prediction,
+                        lwr,
+                        upr) %>% 
+        rename(med.2021.2040 = 3,
+               med.2041.2060 = 4,
+               med.2061.2080 = 5,
+               med.2081.2100 = 6,
+               lwr.2021.2040 = 7,
+               lwr.2041.2060 = 8,
+               lwr.2061.2080 = 9,
+               lwr.2081.2100 = 10,
+               upr.2021.2040 = 11,
+               upr.2041.2060 = 12,
+               upr.2061.2080 = 13,
+               upr.2081.2100 = 14)
       
       tbl %>% readr::write_csv(sprintf(path, 
                                        model_spec_alphabetical[[model]],

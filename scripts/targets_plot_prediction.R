@@ -89,11 +89,13 @@ targets_plot_predictions <- list(
   tar_target(adj_country_predictions_tbl, # list of 4 crop tbls with 4 columns for time period weighted mean              create_country_predictions_tbl(
              create_country_predictions_tbl(
                predictions=adj_predictions_gridded_raster,
+               lwr_bound=adj_lwr_gridded_raster,
+               upr_bound=adj_upr_gridded_raster,
                crop_production_raster_agg=crop_production_raster_agg,
                worldmap_clean=worldmap_clean,
                model_spec_alphabetical=model_spec_alphabetical,
                crops=crops,
-               path="results/tables/adjusted/adjusted_country_weighted_predictions_%s_%s.csv"
+               path="results/tables/adjusted/adjusted_country_weighted_predictions_%s_%s_RCP8.5.csv"
              )
   ),
   
