@@ -200,6 +200,85 @@ targets_model_gam_glm <- list(
                data=lit_responses_1k,
                predictions=adj_grouped_lines_tbl,
                path="results/figures/adj_all_response_function_plots_with_lit.png"
-             ))
+             )),
+  
+  
+  
+  
+  # repeat response functions on precipitation ------------------------------
+  # fit lines
+  tar_target(fitted_lines_pre, fit_lines_pre( 
+    fit=multiply_fit_list,
+    data=AGIMPACTS_bs
+  )),
+  tar_target(grouped_lines_pre, group_fitted_lines(
+    fitted_lines=fitted_lines_pre
+  )),
+  tar_target(grouped_lines_df_pre, rbind_grouped_lines(
+    grouped_lines=grouped_lines_pre
+  )),
+  # rbindlist grouped_lines_df by model_spec
+  tar_target(grouped_lines_tbl_pre,
+             rbindlist(grouped_lines_df_pre, idcol="model_spec")),
+  # adjust response function prediction data to force response through the origin
+  tar_target(adj_grouped_lines_df_pre,
+             {
+               lapply(1:5, function(model){
+                 
+                 fit_zero <- grouped_lines_df_pre[[model]] %>% 
+                   group_by(crop) %>% 
+                   filter(x == 0.00) %>% 
+                   dplyr::select(fit_bar) %>% 
+                   rename(fit_bar_zero=fit_bar)
+                 
+                 grouped_lines_df_pre[[model]] %>% 
+                   left_join(fit_zero, by=c("crop")) %>% 
+                   mutate(fit_bar_adj=fit_bar-fit_bar_zero,
+                          lwr_p_adj=lwr_p-fit_bar_zero,
+                          upr_p_adj=upr_p-fit_bar_zero) %>% 
+                   dplyr::select(!c("fit_bar", "lwr_p", "upr_p")) %>% 
+                   rename(fit_bar=fit_bar_adj,
+                          lwr_p=lwr_p_adj,
+                          upr_p=upr_p_adj) # rename so that we can use the same plot function
+                 
+                 # adjust confidence intervals
+                 
+               })
+               
+             }),
+  
+  tar_target(adj_grouped_lines_tbl_pre,
+             rbindlist(adj_grouped_lines_df_pre, idcol="model_spec")),
+
+  tar_target(adj_all_response_functions_plots_with_data_pre,
+             plot_all_response_functions_with_data_pre(
+               predictions=adj_grouped_lines_tbl_pre,
+               data=AGIMPACTS_bs,
+               path="results/figures/adj_all_response_function_plots_with_data_pre.png"
+             )),
+  tar_target(adj_all_response_functions_plots_with_data_tmp,
+             plot_all_response_functions_with_data_tmp(
+               predictions=adj_grouped_lines_tbl,
+               data=AGIMPACTS_bs,
+               path="results/figures/adj_all_response_function_plots_with_data_tmp.png"
+             )),
+  
+  tar_target(adj_all_response_functions_tmp_pre_data,
+             {library(patchwork)
+    
+    # remove duplicate legend as model colour + shape scale values now match
+    
+    
+    
+    plot <-  adj_all_response_functions_plots_with_data_tmp + adj_all_response_functions_plots_with_data_pre
+    ggplot2::ggsave(filename="results/figures/adj_all_response_fns_tmp_pre.png",
+                    plot=plot,
+                    width=10, height=7
+    )
+    
+    plot
+  } )
+ 
+
   
 )

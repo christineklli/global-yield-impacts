@@ -1343,7 +1343,9 @@ map_change_supply_pct <- function(future_calorie_gap,
             #breaks=c(-1.0,-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4),
             # breaks=c(0,0.015, 0.175, 0.255, 0.365, 0.526),
             midpoint=NA,
-            title= 'Reduction in supply from 2015 (%)') +
+            title= 'Reduction in supply from 2015 (%)',
+            style="cont",
+            legend.is.portrait=FALSE) +
     tm_facets(c("time_period"), drop.NA.facets=T) +
     tmap::tm_shape(World) +
     tmap::tm_borders("grey", lwd =1) +

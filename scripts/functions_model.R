@@ -683,3 +683,161 @@ plot_all_response_functions_with_lit <- function(data, predictions, path){
 }
 
 
+# repeat response functions on precipitation ------------------------------
+
+
+
+fit_lines_pre <- function(fit, data){
+  
+  lapply(1:5, function(k){
+    
+    #v = c(0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
+    
+    lapply(1:4, function(i, k){ # crop subscripts
+      
+      tibble(.imp=1:5) %>% # m subscripts
+        mutate(p=purrr::map(.imp, ~ 
+                              ggpredict(fit[[k]][[i]]$analyses[[.]],
+                                        terms = c("Precipitation.change [-100:100 by=5]"#,
+                                                  #"Baseline_tmp [5:25, by= 5]"
+                                        ),
+                                        typical = "median", # bs temp and bs precip
+                                        condition = c(Temp.Change =0, # change this
+                                                      adapt_dummy = 0, f_CO2 = 0, 
+                                                      Reference_fact = 0, Country2_fact = 0),
+                                        type = "random")  %>% 
+                              data.frame())) %>% 
+        unnest(p) #%>% 
+      # add in the nd predictor data
+      #bind_cols(
+      #  bind_rows(replicate(5, data, simplify = FALSE))
+      #)
+      
+    }, k)
+    
+  })
+}
+
+
+plot_all_response_functions_with_data_pre <- function(predictions, data, path){
+  
+  # make sure this is discrete scale
+  predictions$model_spec <- as.factor(predictions$model_spec)
+  # crop facet labels
+  crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
+  names(crop_labs) <- c("1","2","3","4")
+  
+  AGIMPACTS_bs_restricted <- data %>% 
+    filter(Precipitation.change >=-100 & Precipitation.change <=100) %>% 
+    rename(x=Precipitation.change,
+           fit_bar=Yield.Change)  %>% 
+    mutate(crop=case_when(crop_pooled=="Maize" ~ "1",
+                          crop_pooled=="Rice" ~ "2",
+                          crop_pooled=="Soybean" ~ "3",
+                          crop_pooled=="Wheat" ~ "4"))
+  
+  
+  plot <- ggplot() +
+    #add the observed data for good measure
+    #note this doesn't differentiate by precipitation change or any other covariates
+    geom_point(data = AGIMPACTS_bs_restricted,
+               aes(x = x, y = fit_bar),
+               alpha=0.2, size=0.5, col="black"
+    ) +
+    geom_line(data = predictions,
+              aes(x=x, y = fit_bar, colour = model_spec), 
+              linewidth=1) +
+    geom_ribbon(data = predictions,
+                aes(x=x, ymin = lwr_p, ymax = upr_p,
+                    fill = model_spec),
+                alpha = 0.1) +
+    theme_bw() +
+    #theme(legend.position="none") +
+    labs(x="Precipitation Change (%)",
+         y="Fitted Yield Change (%)") +
+    scale_colour_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    scale_fill_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    
+    facet_wrap(facets=vars(crop),
+               labeller=labeller(crop=crop_labs),
+               scales="free")
+  
+  ggplot2::ggsave(filename=path,
+                  plot=plot,
+                  width=7, height=6)
+  
+  plot
+  
+  
+}
+
+
+plot_all_response_functions_with_data_tmp <- function(predictions, data, path){
+  
+  # make sure this is discrete scale
+  predictions$model_spec <- as.factor(predictions$model_spec)
+  # crop facet labels
+  crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
+  names(crop_labs) <- c("1","2","3","4")
+  
+  AGIMPACTS_bs_restricted <- data %>% 
+    filter(Temp.Change >=0 & Temp.Change <=5) %>% 
+    rename(x=Temp.Change,
+           fit_bar=Yield.Change)  %>% 
+    mutate(crop=case_when(crop_pooled=="Maize" ~ "1",
+                          crop_pooled=="Rice" ~ "2",
+                          crop_pooled=="Soybean" ~ "3",
+                          crop_pooled=="Wheat" ~ "4"))
+  
+  
+  plot <- ggplot() +
+    #add the observed data for good measure
+    #note this doesn't differentiate by precipitation change or any other covariates
+    geom_point(data = AGIMPACTS_bs_restricted,
+               aes(x = x, y = fit_bar),
+               alpha=0.2, size=0.5, col="black"
+    ) +
+    geom_line(data = predictions[x>=0 & x<=5,],
+              aes(x=x, y = fit_bar, colour = model_spec), 
+              linewidth=1) +
+    geom_ribbon(data = predictions[x>=0 & x<=5,],
+                aes(x=x, ymin = lwr_p, ymax = upr_p,
+                    fill = model_spec),
+                alpha = 0.1) +
+    theme_bw() +
+    #theme(legend.position="none") +
+    labs(x="Temperature Change (°C)",
+         y="Fitted Yield Change (%)") +
+    scale_colour_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    scale_fill_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+  
+    facet_wrap(facets=vars(crop),
+               labeller=labeller(crop=crop_labs),
+               scales="free") +
+    theme(legend.position = "none")
+  
+  ggplot2::ggsave(filename=path,
+                  plot=plot,
+                  width=7, height=6)
+  
+  plot
+  
+  
+}
+
