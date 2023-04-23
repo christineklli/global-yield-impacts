@@ -1,14 +1,15 @@
 
 create_crop_production_df <- function(raster){
   lapply(1:4, function(crop){
+    require(magrittr)
     raster::rasterToPoints(
       raster[[crop]]
     ) %>% 
       as.data.frame() %>% 
       rename(production=3) %>% 
       # so that they will round and left join with predictions
-      mutate(x = round(x,2),
-             y = round(y,2))
+      dplyr::mutate(x = round(x,2),
+                    y = round(y,2))
     
     
   })

@@ -169,16 +169,14 @@ tar_target(dev_explained_plot_all,
                  breaks=c("gam_RS","gam_RI","glm_RS","glm_RI","lm"),
                  values=c("darksalmon","darkkhaki","aquamarine3","deepskyblue","darkorchid1")
                ) +
-               labs(y="Deviance Explained")  + 
-               # to combine with dev.explained.all plot later
-               theme(legend.position="none")
+               labs(y="Deviance Explained") 
              
 
-             # ggplot2::ggsave(filename="results/figures/dev_explained_plot_all.png",
-             #                 plot=plot,
-             #                 width=7, height=6)
-             # 
-             # plot
+             ggplot2::ggsave(filename="results/figures/dev_explained_plot_all.png",
+                             plot=plot,
+                             width=7, height=6)
+
+             plot
            }
 ),
 

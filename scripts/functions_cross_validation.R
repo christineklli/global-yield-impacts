@@ -320,7 +320,9 @@ plot_all_m_cv <- function(data, path){
     theme(axis.title.x=element_blank(),
           axis.text.x = element_blank(),
           axis.ticks = element_blank()
-          )
+          ) + 
+    # to combine with dev.explained.all plot later
+    theme(legend.position="none")
     # scale_x_discrete(name="Model ID",
     #                  labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
     #                  breaks=c("1","2","3","4","5")) 

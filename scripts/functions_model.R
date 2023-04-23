@@ -841,3 +841,106 @@ plot_all_response_functions_with_data_tmp <- function(predictions, data, path){
   
 }
 
+# CO2 ---------------------------------------------------------------------
+
+
+
+fit_lines_co2 <- function(fit, data){
+  
+  lapply(1:5, function(k){
+    
+    #v = c(0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
+    
+    lapply(1:4, function(i, k){ # crop subscripts
+      
+      tibble(.imp=1:5) %>% # m subscripts
+        mutate(p=purrr::map(.imp, ~ 
+                              ggpredict(fit[[k]][[i]]$analyses[[.]],
+                                        terms = c("f_CO2 [-10:3 by=0.1]"#,
+                                                  #"Baseline_tmp [5:25, by= 5]"
+                                        ),
+                                        typical = "median", # bs temp and bs precip
+                                        condition = c(Temp.Change =0, # change this
+                                                      adapt_dummy = 0, Precipitation.change = 0,
+                                                      Reference_fact = 0, Country2_fact = 0),
+                                        type = "random")  %>% 
+                              data.frame())) %>% 
+        unnest(p) #%>% 
+      # add in the nd predictor data
+      #bind_cols(
+      #  bind_rows(replicate(5, data, simplify = FALSE))
+      #)
+      
+    }, k)
+    
+  })
+}
+
+plot_all_response_functions_with_data_co2 <- function(predictions, data, path){
+  
+  # make sure this is discrete scale
+  predictions$model_spec <- as.factor(predictions$model_spec)
+  # crop facet labels
+  crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
+  names(crop_labs) <- c("1","2","3","4")
+  
+  AGIMPACTS_bs_restricted <- data %>% 
+    filter(f_CO2 >=-9 & f_CO2 <=3) %>% 
+    rename(x=f_CO2,
+           fit_bar=Yield.Change)  %>% 
+    mutate(crop=case_when(crop_pooled=="Maize" ~ "1",
+                          crop_pooled=="Rice" ~ "2",
+                          crop_pooled=="Soybean" ~ "3",
+                          crop_pooled=="Wheat" ~ "4"))
+  
+  
+  plot <- ggplot() +
+    #add the observed data for good measure
+    #note this doesn't differentiate by precipitation change or any other covariates
+    geom_point(data = AGIMPACTS_bs_restricted,
+               aes(x = x, y = fit_bar),
+               alpha=0.2, size=0.5, col="black"
+    ) +
+    geom_line(data = predictions,
+              aes(x=x, y = fit_bar, colour = model_spec), 
+              linewidth=1) +
+    geom_ribbon(data = predictions,
+                aes(x=x, ymin = lwr_p, ymax = upr_p,
+                    fill = model_spec),
+                alpha = 0.1) +
+    theme_bw() +
+    #theme(legend.position="none") +
+    labs(x="f(CO2)",
+         y="Fitted Yield Change (%)") +
+    xlim(-10, 10) +
+    scale_colour_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    scale_fill_discrete(
+      name = "Model",
+      breaks=c("1","2","3","4","5"),
+      labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")
+    ) +
+    
+    facet_wrap(facets=vars(crop),
+               labeller=labeller(crop=crop_labs),
+               scales="free")
+  
+  ggplot2::ggsave(filename=path,
+                  plot=plot,
+                  width=7, height=6)
+  
+  plot
+  
+  
+}
+
+plot_residuals <- function(fit, model, path){
+  
+  gratia::appraise(fit[[1]][[model]][[1]])
+  
+  ggsave(path)
+  
+}
