@@ -47,28 +47,29 @@ the targets pipeline or contact me for assistance.
 **Spatial production data c. 2000, 0.5 degrees/30 minutes spatial
 resolution**
 
-`X_Production.tiff` where X is crop {Maize, Rice, Soybean, Wheat}
+Files `X_Production.tiff` where X is crop `Maize, Rice, Soybean, Wheat`
 
-> Available at Monfreda, C., Ramankutty, N. & Foley, J. A. Farming the
-> planet: 2. Geographic distribution of crop areas, yields,
-> physiological types, and net primary production in the year 2000.
-> Global Biogeochemical Cycles 22 (2008).
+> Monfreda, C., Ramankutty, N. & Foley, J. A. Farming the planet: 2.
+> Geographic distribution of crop areas, yields, physiological types,
+> and net primary production in the year 2000. Global Biogeochemical
+> Cycles 22 (2008).
 
 **Spatial yields and hectares harvested data c. 2015, 5 minutes spatial
 resolution**
 
-`GAEZAct2015HarvArea_X_Total.tiff` and `GAEZAct2015Yield_X_Mean.tiff`
-where X is crop `Maize, Rice, Soybean, Wheat`
+Files `GAEZAct2015HarvArea_X_Total.tiff` and
+`GAEZAct2015Yield_X_Mean.tiff` where X is crop
+`Maize, Rice, Soybean, Wheat`
 
-> Available at Grogan, D., Frolking, S., Wisser, D., Prusevich, A. &
-> Glidden, S. Global gridded crop harvested area, production, yield, and
-> monthly physical area data circa 2015. Scientific Data 9. Number: 1
-> Publisher: Nature Publishing Group, 15 (2022).
+> Grogan, D., Frolking, S., Wisser, D., Prusevich, A. & Glidden, S.
+> Global gridded crop harvested area, production, yield, and monthly
+> physical area data circa 2015. Scientific Data 9. Number: 1 Publisher:
+> Nature Publishing Group, 15 (2022).
 
 **Spatial crop calendar data c. 2000, 0.5 degrees/30 minutes spatial
 resolution**
 
-`X.crop.calendar.fill.nc` where X is crop
+Files `X.crop.calendar.fill.nc` where X is crop
 `Maize, Maize.2, Rice, Rice.2, Soybeans, Wheat, Wheat.Winter`
 
 > Sacks, W. J., Deryng, D., Foley, J. A. & Ramankutty, N. Crop planting
@@ -78,31 +79,32 @@ resolution**
 Crop calendar information for rainfed vs. irrigated crops provided at
 `data/MIRCA data/CELL_SPECIFIC_CROPPING_CALENDARS_30MN.txt`
 
-> Accessed from Portmann, F. T., Siebert, S. & Döll, P.
-> MIRCA2000---Global monthly irrigated and rainfed crop areas around the
-> year 2000: A new high-resolution data set for agricultural and
-> hydrological modeling. Global Biogeochemical Cycles 24 (2010).
+> Portmann, F. T., Siebert, S. & Döll, P. MIRCA2000---Global monthly
+> irrigated and rainfed crop areas around the year 2000: A new
+> high-resolution data set for agricultural and hydrological modeling.
+> Global Biogeochemical Cycles 24 (2010).
 
 **Monthly spatial temperature and precipitation observations 1901--2020,
 0.5 degrees/30 minutes spatial resolution**
 
-`CRU TS 4.05.1901.2020.tmp.dat.nc`, `CRU TS 4.05.1901.2020.tmp.dat`,
-`CRU TS 4.05.1901.2020.tmp.stn` - `CRU TS 4.05.1901.2020.pre.dat.nc`,
-`CRU TS 4.05.1901.2020.pre.dat`, `CRU TS 4.05.1901.2020.pre.stn`
+Files `CRU TS 4.05.1901.2020.tmp.dat.nc`,
+`CRU TS 4.05.1901.2020.tmp.dat`, `CRU TS 4.05.1901.2020.tmp.stn`,
+`CRU TS 4.05.1901.2020.pre.dat.nc`, `CRU TS 4.05.1901.2020.pre.dat`,
+`CRU TS 4.05.1901.2020.pre.stn`
 
-> Available at Harris, I., Osborn, T. J., Jones, P. & Lister, D. Version
-> 4 of the CRU TS monthly high-resolution gridded multivariate climate
-> dataset. Scientific Data 7, 109 (2020).
+> Harris, I., Osborn, T. J., Jones, P. & Lister, D. Version 4 of the CRU
+> TS monthly high-resolution gridded multivariate climate dataset.
+> Scientific Data 7, 109 (2020).
 
 **Annual global CO2 observations 1959--2021**
 
-File provided `data/co2_annmean_mlo.csv`
+File provided at `data/co2_annmean_mlo.csv`
 
 > Accessed from \url{gml.noaa.gov/ccgg/trends/}.
 
-**FAOSTAT Food Balance Sheets data, country level**
+**FAOSTAT Food Balance Sheets data 2014\--2016, country level**
 
-Accessed from FAOSTAT Food Balance Sheets
+Files accessed from FAOSTAT Food Balance Sheets
 <https://www.fao.org/faostat/en/#data/FBS> (2023):
 
 -   Production Quantity, Import Quantity, Export Quantity and crop
@@ -118,14 +120,14 @@ Accessed from FAOSTAT Food Balance Sheets
 -   Annual Dietary Energy Requirements, file provided in
     `data/Food security data/` folder
 
-**FAOSTAT Population data**
+**FAOSTAT Population 2014\--2016 data, country level**
 
 File provided in `data/Food security data/` folder
 
 > FAOSTAT. Food Balance Sheets
 > <https://www.fao.org/faostat/en/#data/FBS> (2023).
 
-**FAOSTAT Detailed Trade Matrix data**
+**FAOSTAT Detailed Trade Matrix 2014\--2016 data, country level**
 
 Files provided in `data/Food security data/FAOSTAT_trade_data_201416`
 folder
@@ -137,15 +139,15 @@ folder
 
 **CMIP6 individual GCM data, 10 minutes**
 
-> Available at WorldClim. Future climate, 10 minutes spatial resolution
-> --- WorldClim 1 documentation
+> WorldClim. Future climate, 10 minutes spatial resolution --- WorldClim
+> 1 documentation
 > <https://www.worldclim.org/data/cmip6/cmip6_clim10m.html> (2023).
 
 **CMIP5 multi-model mean data, 0.5 degrees/30 minutes spatial
 resolution**
 
-Monthly CMIP5 scenario runs, `iRCP3PD_CO2_1860_2100.nc`,
-`iRCP45_CO2_1860_2100.nc`, `iRCP85_CO2_1860_2100.nc`
+Files `iRCP3PD_CO2_1860_2100.nc`, `iRCP45_CO2_1860_2100.nc`,
+`iRCP85_CO2_1860_2100.nc`
 
 > KNMI, C. E. Monthly CMIP5 scenario runs
 > <https://climexp.knmi.nl/start.cgi> (2023).
