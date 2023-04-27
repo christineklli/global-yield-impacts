@@ -155,7 +155,8 @@ Files `iRCP3PD_CO2_1860_2100.nc`, `iRCP45_CO2_1860_2100.nc`,
 
 **Population projections, country level**
 
--   Provided at `data/Food security data/iamc_db.xslx`
+Provided at `data/Food security data/iamc_db.xslx` and accessed from the
+International Institute of Applied Systems Analysis (IIASA).
 
 > KC, S. & Lutz, W. The human core of the shared socioeconomic pathways:
 > Population scenarios by age, sex and level of education for all
