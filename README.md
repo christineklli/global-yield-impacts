@@ -48,7 +48,8 @@ the targets pipeline or contact me for assistance.
 **Spatial production data c. 2000, 0.5 degrees/30 minutes spatial
 resolution**
 
-Files `X_Production.tiff` where X is crop `Maize, Rice, Soybean, Wheat`
+Files not provided: `X_Production.tiff` where X is crop
+`Maize, Rice, Soybean, Wheat`
 
 > Monfreda, C., Ramankutty, N. & Foley, J. A. Farming the planet: 2.
 > Geographic distribution of crop areas, yields, physiological types,
@@ -58,7 +59,7 @@ Files `X_Production.tiff` where X is crop `Maize, Rice, Soybean, Wheat`
 **Spatial yields and hectares harvested data c. 2015, 5 minutes spatial
 resolution**
 
-Files `GAEZAct2015HarvArea_X_Total.tiff` and
+Files not provided: `GAEZAct2015HarvArea_X_Total.tiff` and
 `GAEZAct2015Yield_X_Mean.tiff` where X is crop
 `Maize, Rice, Soybean, Wheat`
 
@@ -70,14 +71,14 @@ Files `GAEZAct2015HarvArea_X_Total.tiff` and
 **Spatial crop calendar data c. 2000, 0.5 degrees/30 minutes spatial
 resolution**
 
-Files `X.crop.calendar.fill.nc` where X is crop
+Files not provided: `X.crop.calendar.fill.nc` where X is crop
 `Maize, Maize.2, Rice, Rice.2, Soybeans, Wheat, Wheat.Winter`
 
 > Sacks, W. J., Deryng, D., Foley, J. A. & Ramankutty, N. Crop planting
 > dates: an analysis of global patterns. Global Ecology and Biogeography
 > 19, 607--620 (2010).
 
-Crop calendar information for rainfed vs. irrigated crops provided at
+File provided at
 `data/MIRCA data/CELL_SPECIFIC_CROPPING_CALENDARS_30MN.txt`
 
 > Portmann, F. T., Siebert, S. & Döll, P. MIRCA2000---Global monthly
@@ -88,7 +89,7 @@ Crop calendar information for rainfed vs. irrigated crops provided at
 **Monthly spatial temperature and precipitation observations 1901--2020,
 0.5 degrees/30 minutes spatial resolution**
 
-Files `CRU TS 4.05.1901.2020.tmp.dat.nc`,
+Files not provided: `CRU TS 4.05.1901.2020.tmp.dat.nc`,
 `CRU TS 4.05.1901.2020.tmp.dat`, `CRU TS 4.05.1901.2020.tmp.stn`,
 `CRU TS 4.05.1901.2020.pre.dat.nc`, `CRU TS 4.05.1901.2020.pre.dat`,
 `CRU TS 4.05.1901.2020.pre.stn`
@@ -140,6 +141,8 @@ folder
 
 **CMIP6 individual GCM data, 10 minutes**
 
+Files not provided
+
 > WorldClim. Future climate, 10 minutes spatial resolution --- WorldClim
 > 1 documentation
 > <https://www.worldclim.org/data/cmip6/cmip6_clim10m.html> (2023).
@@ -147,16 +150,16 @@ folder
 **CMIP5 multi-model mean data, 0.5 degrees/30 minutes spatial
 resolution**
 
-Files `iRCP3PD_CO2_1860_2100.nc`, `iRCP45_CO2_1860_2100.nc`,
-`iRCP85_CO2_1860_2100.nc`
+Files not provided: `iRCP3PD_CO2_1860_2100.nc`,
+`iRCP45_CO2_1860_2100.nc`, `iRCP85_CO2_1860_2100.nc`
 
 > KNMI, C. E. Monthly CMIP5 scenario runs
 > <https://climexp.knmi.nl/start.cgi> (2023).
 
 **Population projections, country level**
 
-Provided at `data/Food security data/iamc_db.xslx` and accessed from the
-International Institute of Applied Systems Analysis (IIASA).
+File provided at `data/Food security data/iamc_db.xslx` and accessed
+from the International Institute of Applied Systems Analysis (IIASA).
 
 > KC, S. & Lutz, W. The human core of the shared socioeconomic pathways:
 > Population scenarios by age, sex and level of education for all
