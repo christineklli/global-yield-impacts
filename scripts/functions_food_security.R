@@ -1,51 +1,4 @@
 
-# wrangle Olen and Lehsten et al. 2022 gridded pouplation data
-rasterise_pop_10km_file <- function(file, 
-                                    outfile){# somehow terra::rast results in Error: external pointer is not valid
-  
-  all <- raster::stack(file) 
-  # need only 2021-2040
-  pop_2021_2040 <- raster::subset(all, 12:31)
-  # average population over 2021-2040
-  pop_2030 <- calc(pop_2021_2040, fun = mean)
-  pop_2041_2060 <- raster::subset(all, 32:51)
-  pop_2050 <- calc(pop_2041_2060, fun = mean)
-  pop_2061_2080 <- raster::subset(all, 52:71)
-  pop_2070 <- calc(pop_2061_2080, fun = mean)
-  pop_2081_2100 <- raster::subset(all, 72:91)
-  pop_2090 <- calc(pop_2081_2100, fun = mean)
-  
-  pop_all <- raster::stack(pop_2030, pop_2050, pop_2070, pop_2090)
-  writeRaster(pop_all, outfile, overwrite=TRUE)
-  outfile
-  
-}
-
-calc_pop <- function(file){
-  r <- raster::stack(file) 
-  worldmap <- cleangeo::clgeo_Clean(rworldmap::countriesCoarse)
-  df <- exactextractr::exact_extract(
-    r,
-    worldmap,
-    fun='sum'
-  )
-  df %>% as_tibble() %>% 
-    rename(`2021-2040`=1,
-           `2041-2060`=2,
-           `2061-2080`=3,
-           `2081-2100`=4) %>% 
-    cbind(
-      iso_a3=worldmap$ISO_A3,
-      name=worldmap$NAME
-    ) %>% 
-    pivot_longer(., c("2021-2040", 
-                      "2041-2060",
-                      "2061-2080",
-                      "2081-2100"),
-                 names_to="time_period",
-                 values_to="pop_future")
-}
-
 # calc IIASA data into time periods
 
 split_pop_data <- function(file, ssp, worldmap_clean){
@@ -100,7 +53,7 @@ calc_country_ader <- function(ader_data, pop_data, worldmap_clean){
     # deliberately still naming columns with prefix mder rather than ader
     # so that they work for downstream functions
     mutate(mder_annual_2020 = mder_daily_2020 * 365.25,
-           #mder_pop_daily_2030 = mder_daily_2020 * pop_2030,
+          
            mder_pop_annual_future = mder_annual_2020 * pop_future)
 }
 
@@ -205,7 +158,6 @@ check_baseline_production <- function(fao_production, grogan_production){
   
   fao <- split(fao, fao$Item) # so that list will be matched by crop index
   
-  # World and FAO country names do not match; e.g. United States
   lapply(1:4, function(i){
     grogan_production[[i]] %>% 
       rename(Value_calc = production) %>% 
@@ -227,8 +179,7 @@ calc_future_yields <- function(yields_data, predictions){
       pred_r <- rasterFromXYZ(predictions[[time_period]][[crop]],
                               crs="+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
       
-      # future yield = (1 + yield change/100) * baseline yield
-      # total production per pixel = yield in tons/hectare x number of hectares 
+   
       (1+pred_r/100) * yield # * hectares * 1000
       
     })
@@ -240,9 +191,7 @@ calc_future_yields <- function(yields_data, predictions){
 extract_country_production_predictions <- function(predictions, World){
   lapply(1:4, function(time_period){
     lapply(1:4, function(crop){
-      # extend extent of World to be consistent with predictions (warning message was received)
-      #st_bbox(World) <- st_bbox(c(xmin=-180, ymin=-90, xmax=180, ymax=90))
-      
+
       production <- exactextractr::exact_extract(
         predictions[[time_period]][[crop]],
         World,
@@ -319,8 +268,6 @@ check_fao_trade_rice <- function(data){
   # and 27 though labelled just 'Rice' is labelled 'Rice, paddy' in the official correspondance 
   # quantities for 30 are quite large, whereas quantities for 27 are very low
   # code 30 is missing from the official correspondance and default composition definition
-  # hypothesise that 30 could be a total figure of all the other rices
-  # (we've been using just 27 rice (actually rice paddy) so far! - introducing trade biases for sure)
   data %>% 
     filter(`Reporter Countries`=="Japan" & `Item Code (FAO)` %in% c(30) & Element == "Export Quantity" & Year=="2016") %>% 
     dplyr::select(`Partner Countries`, Value, `Item Code (FAO)`)
@@ -366,7 +313,6 @@ check_fbs_tm_data <- function(fao_export_data, fbs_data, concord, outfile){
     
     x
     
-    
     # these are remarkably well matched considering trade crop categories
     # do not include 'other products'
     # so on the whole slightly lower volumes than crop allocation data
@@ -410,18 +356,17 @@ process_export_data <- function(fao_export_data, concord, fbs_data){
     mutate(Exports_trade=ifelse(is.na(Exports_trade) | is.infinite(Exports_trade),0,Exports_trade))
 }
 
-calc_fao_export_share <- function(fao_trade_export){# remember that export quantity doesn't vary by partner country
+calc_fao_export_share <- function(fao_trade_export){
+  # remember that export quantity doesn't vary by partner country
   # only by reporter country (it is from fao crop allocation data)
   fao_trade_export %>% 
     group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Item, `Item Code (CPC)`, Year) %>%  # summarise across partner countries
     summarise(Exports_total = sum(`Export Quantity`, na.rm=T), # mean before
               Production_total = sum(Production, na.rm=T), # mean before
-              #  Exports_trade_total = sum(Exports_trade, na.rm=T), # as this is summing across exports to all countries for an exporting country 
               Exports.total.prop = Exports_total/Production_total) %>% 
     # average over years
     group_by(`Reporter Countries`, `Reporter Country Code (ISO2)`, Item, `Item Code (CPC)`) %>% 
     summarise(Exports_alloc_total = sum(Exports_total, na.rm=T), # export column from alloc dataset
-              #  Exports_trade_total = sum(Exports_trade_total, na.rm=T), # export column from trade dataset
               Production_total = sum(Production_total, na.rm=T), # production column from alloc dataset
               Exports.alloc.total.prop = Exports_alloc_total/Production_total) 
 }
@@ -438,7 +383,7 @@ rbind_country_production_predictions <- function(predictions){
       Item = c("Maize and products",
                "Rice and products",
                "Soyabeans",
-               "Wheat and products") # target
+               "Wheat and products") 
     ), by = "crop") %>% 
     left_join(data.frame(
       time=c(1:4),
@@ -500,7 +445,7 @@ calc_exports <- function(fao_export_share,
                   production_2015_fao  # check export calc methodology using FAO production data
                 ),
               by=c("Reporter Country Code (ISO2)" = "iso_a2", "crop")) %>% 
-    # check export calc methodology using FAO production data
+ 
     
     # multiply export.prop by future production for total future exports
     mutate(exports_future = Exports.alloc.total.prop * production,
@@ -574,31 +519,7 @@ process_fao_import_export_2015_data <- function(fbs_data){
     rename(exports_2015 = `Export Quantity`,
            imports_2015 = `Import Quantity`) 
 }
-# 
-# check_baseline_import_export <- function(data, est_imports, est_exports, outfile){
-#   data %>% # note this is not a valid check
-#     # need to replace exports_fao and imports_fao with actual FBS data
-#     left_join(est_imports %>% filter(time_period=="2021-2040") %>% 
-#                 dplyr::select(
-#                             `Partner Country Code (ISO2)`, 
-#                             imports_baseline, imports_fao, 
-#                             `Item (FBS)`, `Item Code (CPC)`), 
-#               by=c("Area Code (ISO2)"="Partner Country Code (ISO2)", "Item Code (CPC)")) %>% 
-#     left_join(est_exports %>% filter(time_period=="2021-2040")%>% 
-#                 dplyr::select(
-#                             `Reporter Country Code (ISO2)`, 
-#                             exports_baseline, exports_fao, 
-#                             `Item Code (CPC)`), 
-#               by=c("Area Code (ISO2)"="Reporter Country Code (ISO2)", "Item Code (CPC)")) %>% 
-#     # actuals are imports_2015 and exports_2015, estimates are imports_baseline and exports_baseline
-#     # they should be near identical!
-#     dplyr::select(Area, `Area Code (ISO2)`, `Item Code (CPC)`, `Item (FBS)`, 
-#                   imports_baseline, imports_fao,
-#                   exports_baseline, exports_fao) %>% 
-#     write_csv(outfile)
-# }
 
-# 
 check_baseline_supply <- function(data, est_imports, est_exports){
   
   fao_data <- data %>% 
@@ -621,8 +542,7 @@ check_baseline_supply <- function(data, est_imports, est_exports){
                   `Item Code (CPC)`, production_2015_gaez), 
               by=c("Partner Country Code (ISO2)"="Reporter Country Code (ISO2)", 
                    "Item Code (CPC)")) %>% 
-    # actuals are imports_2015 and exports_2015, estimates are imports_baseline and exports_baseline
-    # they should be near identical!
+
     dplyr::select(`Partner Country Code (ISO2)`, `Item Code (CPC)`, 
                   imports_baseline, 
                   exports_baseline, 
@@ -787,11 +707,7 @@ calc_staple_share_calories <- function(fao_all_products_kcal,
       "Rice and products",
       "Soyabeans",
       "Wheat and products"#,
-      # "Bovine Meat",
-      # "Pigmeat",
-      # "Poultry Meat",
-      # "Eggs",
-      # "Milk - Excluding Butter"
+   
     )) %>%
     # summarise new column sum of these products
     # then mutate another column to calculate the share for each country
@@ -800,15 +716,7 @@ calc_staple_share_calories <- function(fao_all_products_kcal,
               sum_total_items=sum(sum_total_items,na.rm=T),
               staple_item_share=sum_staple_items/sum_total_items)
   
-  # check global staple share, should be close to 0.64 from Tilman 2011
-  # data %>% 
-  #                  summarise(sum_staple_items=sum(sum_staple_items),
-  #                            sum_total_items=sum(sum_total_items),
-  #                            staple_item_share=sum_staple_items/sum_total_items)
-  # 0.571, this is closer to 0.64; could be lower because we look at 186 countries
-  # rather than 100 countries as in Tilman
-  # and the staple share may be lower in the remaining 86 countries?
-  
+ 
   data
   
 }
@@ -821,11 +729,10 @@ calc_future_calorie_gap <- function(future_food_gap,
     left_join(dplyr::select(country_pop_mder, Code, mder_annual_2020, pop_future, time_period), 
               by = c("ISO_A3"="Code", "time_period")) %>% 
     left_join(dplyr::select(fao_staple_share, `Area Code (ISO2)`, staple_item_share),
-              by=c("Partner Country Code (ISO2)" = "Area Code (ISO2)")) %>% # this line is new
+              by=c("Partner Country Code (ISO2)" = "Area Code (ISO2)")) %>% 
     group_by(time_period) %>% 
     mutate(
-      calories_supply_total = calories_supply / staple_item_share, # this line is new
-      #calories_supply_total = calories_supply/0.7,
+      calories_supply_total = calories_supply / staple_item_share,
       calorie_gap_persons = (calories_demand - calories_supply_total)/mder_annual_2020,
       calorie_gap_rate = calorie_gap_persons/pop_future) %>% 
     filter(ISO_A3 != "Ashm")
@@ -850,18 +757,14 @@ calc_baseline_calories_by_crop <- function(country_baseline_future_production_df
     
     left_join(dplyr::select(fao_crop_allocation_multiyear, `Area Code (ISO2)`, Item, `Item Code (CPC)`, Element, Prop), 
               by=c("iso_a2"="Area Code (ISO2)", "Item")) %>% 
-    #filter(Element %in% c("Feed", "Food")) %>% 
     filter(Element %in% c("Food")) %>% 
-    # left_join(dplyr::select(fao_country_feed_calories, feed_conversion, `Area Code (ISO2)`), by=c("iso_a2"="Area Code (ISO2)")) %>% 
-    # left_join(crop_calorie_conversion, by=c("Item"="Item (FBS)")) %>% # need to left join import quantities in 2015 from FAO
-    # # left_join(fao_import_export_2015,
-    # #           by=c("iso_a2"="iso2", "alloc_crops"="Item")) %>% 
+
     left_join(est_imports %>% filter(time_period=="2021-2040") %>% dplyr::select(
       `Partner Country Code (ISO2)`,
       `Item Code (CPC)`,
       imports_baseline),
       
-      by=c("iso_a2"="Partner Country Code (ISO2)", "Item Code (CPC)")) %>% # we have lost 177-160 = 17 countries here?
+      by=c("iso_a2"="Partner Country Code (ISO2)", "Item Code (CPC)")) %>% 
     rename(imports_2015 = imports_baseline) %>% 
     left_join(est_exports %>% filter(time_period=="2021-2040") %>% dplyr::select(
       `Reporter Country Code (ISO2)`,
@@ -888,16 +791,7 @@ calc_baseline_calories_by_crop <- function(country_baseline_future_production_df
                          "Element")) %>% 
     rowwise() %>% 
     mutate(total_calories_gaez=total_supply_gaez*Prop*Conversion)
-    # rowwise() %>% 
-    # # is it appropriate to multiply non-crop-specific feed conversion factor by crop-specific supply?
-    # # yes, because feed is not differentiated by feed type, only by animal type
-    # mutate(
-    #   #gaez
-    #   total_supply_gaez = production_2015_gaez + imports_2015 - exports_2015,
-    #   # #gaez
-    #   food_calories_gaez=total_supply_gaez*Prop*crop_conversion,
-    #   feed_calories_gaez=total_supply_gaez*Prop*feed_conversion,
-    #   total_calories_gaez=food_calories_gaez+feed_calories_gaez#,
+  
     
 }
 
@@ -925,17 +819,16 @@ calc_country_pop_mder_2015 <- function(mder_data,
     mutate(mder_annual_2015 = mder_daily_2015 * 365.25,
            mder_pop_daily_2015 = mder_daily_2015 * pop_2015,
            mder_pop_annual_2015 = mder_annual_2015 * pop_2015)
-} # 194-177=17 countries will not have population information
+} 
 
 
 
 calc_baseline_calorie_gap <- function(baseline_2015_calories_by_crop,
                                       country_pop_mder_2015,
-                                      fao_staple_share){# only 145 countries
+                                      fao_staple_share){
   baseline_2015_calories_by_crop %>% 
     group_by(name,ISO_A3,iso_a2) %>% 
-    summarise(total_calories_gaez=sum(total_calories_gaez,na.rm=T)#,
-              # total_calories_fao=sum(total_calories_fao,na.rm=T)
+    summarise(total_calories_gaez=sum(total_calories_gaez,na.rm=T)
     ) %>% 
     left_join(dplyr::select(
       country_pop_mder_2015, 
@@ -945,14 +838,11 @@ calc_baseline_calorie_gap <- function(baseline_2015_calories_by_crop,
     left_join(dplyr::select(fao_staple_share, `Area Code (ISO2)`, staple_item_share),
               by=c("iso_a2"="Area Code (ISO2)")) %>% 
     mutate( 
-      #calories_supply_total_gaez = total_calories_gaez/0.7,
-      #       calories_supply_total_fao = total_calories_fao/0.7,
-      calories_supply_total_gaez = total_calories_gaez/staple_item_share, # /0.7
-      # calories_supply_total_fao = total_calories_fao/staple_item_share, # /0.7
+     
+      calories_supply_total_gaez = total_calories_gaez/staple_item_share, 
       calorie_gap_persons_gaez = (calories_demand - calories_supply_total_gaez)/mder_annual_2015,
-      calorie_gap_rate_gaez = calorie_gap_persons_gaez/pop_2015#,
-      # food_insecure_persons_fao = (calories_demand - calories_supply_total_fao)/mder_annual_2015,
-      # pou_rate_fao = food_insecure_persons_fao/pop_2015
+      calorie_gap_rate_gaez = calorie_gap_persons_gaez/pop_2015
+     
     ) %>% 
     filter(ISO_A3 != "Ashm")
 }
@@ -1027,7 +917,6 @@ calc_calorie_gap_change <- function(future_calorie_gap,
     rename(calories_demand_future=calories_demand,
            calories_supply_total_future=calories_supply_total,
            calorie_gap_rate_future = calorie_gap_rate) %>% 
-    # mutate(FI_status_2030 = ifelse(calorie_gap_rate_2030 < 0, 0, 1)) # 1=insecure
     mutate(FI_status_future = ifelse(calorie_gap_rate_future < 0, 0, 1))
   
   baseline <- baseline_2015_calorie_gap %>% 
@@ -1052,55 +941,6 @@ calc_calorie_gap_change <- function(future_calorie_gap,
   
 }
 
-map_calorie_gap_persons <- function(data, World, outfile){
-  
-  data <- data %>% 
-    dplyr::select(c("Country", "Partner Country Code (ISO2)","ISO_A3", "calorie_gap_persons", "time_period")) %>% 
-    mutate(persons_millions = calorie_gap_persons/10^6)
-  
-  dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
-  
-  plot <- tmap::tm_shape(dat) +
-    tm_fill("persons_millions",
-            palette = c("yellowgreen", "lightyellow", "khaki1", "orange","red3"),
-            midpoint=0,
-            #palette=c("orange","lightgreen","red3","darkgreen"),
-            title= 'Calorie gap in persons (millions)') +
-    tm_facets(c("time_period"), drop.NA.facets=T) +
-    tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
-  
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
-  plot
-  
-}
-
-
-map_calorie_gap_rate <- function(data, World, outfile){
-
-  data <- data %>% 
-    dplyr::select(c("Country", "Partner Country Code (ISO2)","ISO_A3", "calorie_gap_rate", "time_period")) %>% 
-    # cap excess supply at 0
-    mutate(calorie_gap_rate=ifelse(calorie_gap_rate<0, 0, calorie_gap_rate))
-  # display variation in more smaller bin changes
-  
-  dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
-  
-  plot <- tmap::tm_shape(dat) +
-    tm_fill("calorie_gap_rate",
-            palette = c("white", "khaki1", "orange","red3", "brown"),
-            #breaks=seq(from=0,to=1,by=0.2),
-            breaks=c(0, 0.015, 0.175, 0.255, 0.365, 0.526),
-            #palette=c("orange","lightgreen","red3","darkgreen"),
-            title= 'Calorie gap in persons/population') +
-    tm_facets(c("time_period"), drop.NA.facets=T) +
-    tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
-  
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
-  plot
-  
-}
 
 plot_FI_status_change <- function(calorie_gap_change,
                                   World,
@@ -1126,187 +966,6 @@ plot_FI_status_change <- function(calorie_gap_change,
 }
 
 
-
-
-
-
-plot_rate_change <- function(calorie_gap_change,
-                             World,
-                             outfile){
-  data <- calorie_gap_change %>% 
-    # disregard food excess supply (net exporting countries) as the focus is on food security
-    # the minimum pou rate is 0
-    mutate(#pou_rate_2015=ifelse(pou_rate_2015<0, 0, pou_rate_2015),
-      #pou_rate_2030=ifelse(pou_rate_2030<0, 0, pou_rate_2030),
-      calorie_gap_rate_change=calorie_gap_rate_future-calorie_gap_rate_2015)
-  # for uncapped, mutate (
-  #pou_rate_change=(pou_rate_2030-pou_rate_2015)/pou_rate_2015)
-  
-  dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
-  
-  plot <- tmap::tm_shape(dat) +
-    tm_fill("calorie_gap_rate_change", 
-            palette=rev(hcl.colors(7,"RdYlGn")),
-            #palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
-            #palette=c("yellowgreen", "lightyellow","khaki1","orange"),
-            # note that some countries exceed this such as Ukraine
-            #   palette=c("darkgreen", "yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
-            #breaks=c(-0.4,-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5),
-            midpoint=0,
-            title= 'Change in calorie gap (persons/popn)') +
-    tm_facets(c("time_period"), drop.NA.facets=T) +
-    tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
-  
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
-  plot
-  # 
-}
-
-
-
-
-
-decompose_calorie_gap_change <- function(future_calorie_gap,
-                                         baseline_2015_calorie_gap,
-                                         comparison_2015_calorie_gap){
-  future <- future_calorie_gap %>% 
-    dplyr::select(c("Country", "ISO_A3","calories_demand","calories_supply_total",
-                    "mder_annual_2020","pop_future", "time_period")) %>% 
-    rename(calories_demand_future=calories_demand,
-           calories_supply_total_future=calories_supply_total) 
-  
-  baseline <- baseline_2015_calorie_gap %>% 
-    dplyr::select(c("ISO_A3", "calories_supply_total_gaez", "calories_demand",
-                    "mder_annual_2015","pop_2015")) %>% 
-    rename(calories_supply_total_2015 = calories_supply_total_gaez,
-           calories_demand_2015 = calories_demand) 
-  
-  data <- baseline %>% left_join(future,
-                                 by=c("ISO_A3")) %>% 
-    left_join(dplyr::select(comparison_2015_calorie_gap,
-                            Area,
-                            ISO_A3,
-                            fao_total_calories),
-              by=c("ISO_A3")) %>% 
-    rowwise() %>% 
-    mutate(change_demand_calories = calories_demand_future-calories_demand_2015,
-           change_supply_calories = calories_supply_total_future-calories_supply_total_2015,
-           calorie_gap_future = calories_demand_future-calories_supply_total_future, # gap = negative
-           calorie_gap_2015 = calories_demand_2015-calories_supply_total_2015, # excess supply = positive
-           calorie_gap_2015_fao = calories_demand_2015-fao_total_calories) 
-  # how many and which countries to plot this for?
-  # those who were secure and now become insecure?
-  # all of those that are insecure?
-  
-}
-
-plot_rate_change_become_insecure <- function(decomposed_change_in_calories,
-                                             outfile,
-                                             countries_becoming_insecure,
-                                             time,
-                                             label_future){
-  data <- decomposed_change_in_calories %>% 
-    dplyr::select(!c("name")) %>% 
-    mutate(rate_gap_future=calorie_gap_future/mder_annual_2020/pop_future,
-           rate_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
-           rate_gap_2015_fao=calorie_gap_2015_fao/mder_annual_2015/pop_2015,
-           change_demand_rate=change_demand_calories/mder_annual_2020/pop_future, # instead of 2015/2015?
-           change_supply_rate=change_supply_calories/mder_annual_2020/pop_future) %>% 
-    filter(
-      ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
-    pivot_longer(.,
-                 c("rate_gap_future",
-                   "rate_gap_2015",
-                   "rate_gap_2015_fao",
-                   "change_demand_rate",
-                   "change_supply_rate",),
-                 names_to="measure",
-                 values_to="rate") 
-  
-  data$measure <- factor(data$measure,
-                         levels=c("rate_gap_2015_fao",
-                                  "rate_gap_2015",
-                                  "rate_gap_future",
-                                  "change_demand_rate",
-                                  "change_supply_rate"))
-  
-  lbls=c(
-    "Demand - Supply FAO, 2015",
-    "Demand - Supply, 2015",
-    label_future,
-    "Change in demand",
-    "Change in supply"
-  )
-  
-  plot <- ggplot(data %>% 
-                   filter(time_period==time) %>% 
-                   dplyr::select(c(ISO_A3, measure,rate)), 
-                 aes(measure, rate,fill=measure))+
-    geom_bar(stat="identity")+
-    facet_wrap(~ISO_A3) +
-    theme(axis.text.x = element_blank(),
-          legend.position = "right")+
-    scale_fill_discrete(
-      limits=c("rate_gap_2015_fao",
-               "rate_gap_2015",
-               "rate_gap_future",
-               "change_demand_rate",
-               "change_supply_rate"),
-      labels=str_wrap(lbls, 10),
-      name="Measure"
-    ) +
-    scale_y_continuous(name="Persons / Population")
-  
-  plot
-  ggsave(outfile)
-  plot
-}
-
-map_change_supply_rate <- function(future_calorie_gap,
-                                   baseline_2015_calorie_gap,
-                                   World,
-                                   outfile
-                                   ){
-  
-  future <- future_calorie_gap %>% 
-    dplyr::select(c("Country", "ISO_A3", "calories_supply_total",
-                    "mder_annual_2020","pop_future", "time_period",
-                    "Partner Country Code (ISO2)")) %>% 
-    rename(calories_supply_total_future=calories_supply_total) 
-  
-  baseline <- baseline_2015_calorie_gap %>% 
-    dplyr::select(c("ISO_A3", "calories_supply_total_gaez", 
-                    "mder_annual_2015","pop_2015")) %>% 
-    rename(calories_supply_total_2015 = calories_supply_total_gaez) 
-  
-  data <- baseline %>% left_join(future,
-                                 by=c("ISO_A3")) %>% 
-    mutate(supply_change = calories_supply_total_2015 - calories_supply_total_future,
-           supply_change_rate = supply_change/mder_annual_2020/pop_future)
-  
-  dat <- World %>% left_join(data, by=c("iso_a2"="Partner Country Code (ISO2)"))
-  
-  plot <- tmap::tm_shape(dat) +
-    tm_fill("supply_change_rate", 
-            #palette="RdYlGn",
-            #palette=c("yellowgreen","lightyellow","khaki1","orange","red3"), 
-            #palette=c("yellowgreen", "lightyellow","khaki1","orange"),
-            # note that some countries exceed this such as Ukraine
-               palette=c("darkgreen", "yellowgreen","lightyellow","khaki1","orange","red3", "brown"), 
-            #breaks=c(-1.0,-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4),
-            breaks=c(0,0.015, 0.175, 0.255, 0.365, 0.526),
-            midpoint=0,
-            title= 'Change in supply (persons/popn)') +
-    tm_facets(c("time_period"), drop.NA.facets=T) +
-    tmap::tm_shape(World) +
-    tmap::tm_borders("grey", lwd =1) 
-  
-  tmap::tmap_save(plot, filename=outfile, height=4, width=10, asp=0)
-  plot
-  
-  
-}
 
 map_change_supply_pct <- function(future_calorie_gap,
                                    baseline_2015_calorie_gap,
@@ -1357,160 +1016,3 @@ map_change_supply_pct <- function(future_calorie_gap,
   
   
 }
-
-# 
-# plot_calorie_gap_become_insecure <- function(decomposed_change_in_calories,
-#                                                         outfile,
-#                                                         countries_becoming_insecure){
-#   data <- decomposed_change_in_calories %>% 
-#     dplyr::select(!c("name","calories_supply_total_2015","calories_demand_2015")) %>% 
-#     filter(
-#       ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
-#     pivot_longer(.,
-#                  c("calorie_gap_2030",
-#                    "calorie_gap_2015",
-#                    "change_demand_calories",
-#                    "change_supply_calories",
-#                    "calories_demand_2030",
-#                    "calories_supply_total_2030"),
-#                  names_to="measure",
-#                  values_to="calories") %>% 
-#     mutate(calories_billions=calories/10^9) %>% 
-#     filter(!measure %in% c("calories_demand_2030",
-#                            "calories_supply_total_2030"))
-#   
-#   
-#   plot <- ggplot(data %>% 
-#                    dplyr::select(c(ISO_A3, measure,calories_billions)), 
-#                  aes(measure, calories_billions,fill=measure))+
-#     geom_bar(stat="identity")+
-#     facet_wrap(~ISO_A3) +
-#     theme(axis.text.x = element_blank())+
-#     scale_fill_discrete(
-#       limits=c("calorie_gap_2015",
-#                "calorie_gap_2030",
-#                "change_demand_calories",
-#                "change_supply_calories"),
-#       labels=c(
-#         "Demand - Supply, 2015",
-#         "Demand - Supply, 2030",
-#         "Change in demand (popn.)",
-#         "Change in supply (prodn.)"
-#       ),
-#       name="Measure"
-#     ) +
-#     scale_y_continuous(name="Calories (billions)")
-#   
-#   plot
-#   ggsave(outfile)
-#   plot
-# }
-# 
-# plot_persons_change_decomposed_become_insecure <- function(decomposed_change_in_calories,
-#                                                            countries_becoming_insecure,
-#                                                            outfile){
-#   data <- decomposed_change_in_calories %>% 
-#     dplyr::select(!c("name")) %>% 
-#     mutate(rate_gap_2030=calorie_gap_2030/mder_annual_2020,
-#            rate_gap_2015=calorie_gap_2015/mder_annual_2015,
-#            change_demand_rate=change_demand_calories/mder_annual_2020, # instead of 2015/2015?
-#            change_supply_rate=change_supply_calories/mder_annual_2020) %>% 
-#     filter(
-#       ISO_A3 %in% countries_becoming_insecure$ISO_A3) %>% # outlier that is skewing the bars 
-#     pivot_longer(.,
-#                  c("rate_gap_2030",
-#                    "rate_gap_2015",
-#                    "change_demand_rate",
-#                    "change_supply_rate",),
-#                  names_to="measure",
-#                  values_to="persons") %>% 
-#     mutate(persons_millions = persons/10^6)
-#   
-#   data$measure <- factor(data$measure,
-#                          levels=c("rate_gap_2015",
-#                                   "rate_gap_2030",
-#                                   "change_demand_rate",
-#                                   "change_supply_rate"))
-#   
-#   lbls=c(
-#     "Demand - Supply, 2015",
-#     "Demand - Supply, 2030",
-#     "Change in demand",
-#     "Change in supply"
-#   )
-#   
-#   ggplot(data %>% 
-#            dplyr::select(c(ISO_A3, measure,persons_millions)), 
-#          aes(measure, persons_millions,fill=measure))+
-#     geom_bar(stat="identity")+
-#     facet_wrap(~ISO_A3) +
-#     theme(axis.text.x = element_blank(),
-#           legend.position = "right")+
-#     scale_fill_discrete(
-#       limits=c("rate_gap_2015",
-#                "rate_gap_2030",
-#                "change_demand_rate",
-#                "change_supply_rate"),
-#       labels=str_wrap(lbls, 10),
-#       name="Measure"
-#     ) +
-#     scale_y_continuous(name="Persons (millions)")
-#   
-#   
-#   ggsave(outfile)
-#   
-# }
-# 
-# plot_rate_change_decomposed_remain_insecure <- function(decomposed_change_in_calories,
-#                                                        countries_remaining_insecure,
-#                                                        outfile){
-#   data <- decomposed_change_in_calories %>% 
-#     dplyr::select(!c("name")) %>% 
-#     mutate(rate_gap_2030=calorie_gap_2030/mder_annual_2020/pop_2021_2040,
-#            rate_gap_2015=calorie_gap_2015/mder_annual_2015/pop_2015,
-#            change_demand_rate=change_demand_calories/mder_annual_2020/pop_2021_2040, # instead of 2015/2015?
-#            change_supply_rate=change_supply_calories/mder_annual_2020/pop_2021_2040) %>% 
-#     filter(
-#       ISO_A3 %in% countries_remaining_insecure$ISO_A3) %>% # outlier that is skewing the bars 
-#     pivot_longer(.,
-#                  c("rate_gap_2030",
-#                    "rate_gap_2015",
-#                    "change_demand_rate",
-#                    "change_supply_rate",),
-#                  names_to="measure",
-#                  values_to="rate") 
-#   
-#   data$measure <- factor(data$measure,
-#                          levels=c("rate_gap_2015",
-#                                   "rate_gap_2030",
-#                                   "change_demand_rate",
-#                                   "change_supply_rate"))
-#   
-#   lbls=c(
-#     "Demand - Supply, 2015",
-#     "Demand - Supply, 2030",
-#     "Change in demand",
-#     "Change in supply"
-#   )
-#   
-#   ggplot(data %>% 
-#            dplyr::select(c(ISO_A3, measure,rate)), 
-#          aes(measure, rate,fill=measure))+
-#     geom_bar(stat="identity")+
-#     facet_wrap(~ISO_A3) +
-#     theme(axis.text.x = element_blank(),
-#           legend.position = "right")+
-#     scale_fill_discrete(
-#       limits=c("rate_gap_2015",
-#                "rate_gap_2030",
-#                "change_demand_rate",
-#                "change_supply_rate"),
-#       labels=str_wrap(lbls, 10),
-#       name="Measure"
-#     ) +
-#     scale_y_continuous(name="Persons / Population")
-#   
-#   
-#   ggsave(outfile)
-#   
-# }

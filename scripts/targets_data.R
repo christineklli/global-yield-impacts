@@ -16,31 +16,19 @@ tar_option_set(packages = packages,
                format = "qs" # efficient storage format, need to first install qs
 ) 
 
-# note that we skip create targets for web scraping - retain script 1
-# not sure how targets() interacts with json/web environments, try later
-#tar_target(file, "processed/agimpacts_full.csv", format = "file"),
-#tar_target(CGIAR_data, get_data_from_csv(file)),
-#tar_target(CGIAR_cleaned, remove_na(CGIAR_data)),
-# note that we skip targets for the manual data validation - retain script 2
-# because it is just too hard to rewrite...for now
-# thus start from scraped + validated data agimpacts_final.csv
-
 
 # CGIAR and Monfreda data prep --------------------------------------------
 
-# corresponds to script 3 in agimpacts-precip repo
 targets_data_production <- list(
   tar_target(ag, "processed/agimpacts_final.csv", format = "file"),
   tar_target(agimpacts, get_data_from_csv(ag)),
-  # note we need to convert some variables from chr to factor later
-  # work with Monfreda data FIRST and THEN make all changes to agimpacts in one function
+
   tar_target(monfreda_prod_files, c("data/Monfreda data/maize_Production.tif",
                                     "data/Monfreda data/rice_Production.tif",
                                     "data/Monfreda data/soybean_Production.tif",
                                     "data/Monfreda data/wheat_Production.tif"), format = "file"),
   tar_target(worldmap, rworldmap::getMap(resolution = "coarse")),
   tar_target(worldmap_clean, cleangeo::clgeo_Clean(worldmap)),
-  # this takes a long time
   tar_target(crop_production_country, extract_country_crop_production(
     files=monfreda_prod_files,
     map_boundaries=worldmap_clean)
@@ -71,8 +59,7 @@ targets_data_production <- list(
   tar_target(AGIMPACTS_MAIN, join_cgiar_data_country_rank(
     data=AGIMPACTS,
     multi_index=multi_index)),
-  # note that the format of these rasters has changed slightly
-  # for CRU temperature country extraction, need to specify raster list index[[1]]
+
   tar_target(crop_production_rasters, rasterise_files(monfreda_prod_files))
   
 )
@@ -80,7 +67,6 @@ targets_data_production <- list(
 
 # Crop calendar (Sacks and MIRCA) data prep ---------------------------------------------------------
 
-# corresponds to script 04 in agimpacts-precip repo
 targets_data_crop_calendar <- list(
   tar_target(file_sacks, nc_folder_path("Sacks data")),
   tar_target(crop_calendar_list, read_sacks(file_sacks)),
@@ -105,10 +91,7 @@ targets_data_crop_calendar <- list(
 # CRU temperature and precipitation data prep -----------------------------
 
 targets_data_tmp_precip <- list(
-  # first - work with CRU temperature data
-  # corresponds to script 05_1 in agimpacts-precip repo
   tar_target(cru_data_tmp, read_cru_data("cru_ts4.05.1901.2020.tmp.dat.nc")),
-  # this takes a long time
   tar_target(cru_country_list_tmp, extract_country_cru_data(
     raster=cru_data_tmp,
     map_boundaries=worldmap_clean,
@@ -123,11 +106,9 @@ targets_data_tmp_precip <- list(
                data2=cru_country_df_tmp,
                var="tmp"
              )),
-  # second - work with CRU precipitation data
-  # corresponds to script 05_2 in agimpacts-precip repo
-  # simply recode using same target functions as above ^_^
+ 
   tar_target(cru_data_pre, read_cru_data("cru_ts4.05.1901.2020.pre.dat.nc")),
-  # this takes a long time
+
   tar_target(cru_country_list_pre, extract_country_cru_data(
     raster=cru_data_pre,
     map_boundaries=worldmap_clean,
@@ -143,8 +124,7 @@ targets_data_tmp_precip <- list(
                var="pre"
              )),
   # calculate baseline cgiar temperature & precipitation data
-  # corresponds to script 06 in agimpacts-precip repo
-  # i.e. apply dynamic averaging to cgiar data points
+
   tar_target(baseline_periods, filter_baseline_periods_cgiar(
     data=AGIMPACTS_MAIN
   )),
@@ -195,15 +175,13 @@ targets_data_yields <- list(
 
 targets_impute <- list(
   tar_target(imputed_data, impute_data(data=AGIMPACTS_bs)), 
-  # note there are warning messages about failure to converge
-  # degenerate Hessian with 1 negative eigenvalues
+ 
   tar_target(imputed_plots, plot_imputed_data(
     imp=imputed_data,
     path1="results/figures/imp_convergence_plot.png"
-    #path2="imp_density_plot.png"
-  ), format="file"), # NOTE THIS DOES NOT WORK - FIX THIS LATER
-  # says plot file is missing
-  # strange because plotting with tar_read(imputed_data) does work
+
+  ), format="file"),
+
   tar_target(crop_list_imp, wrangle_imputed_data(imputed_data)),
   tar_target(crop_imputed_data, coalesce_imputed_data(crop_list_imp)),
   tar_target(crop_imputed_rst_data, clean_imputed_data(crop_imputed_data))

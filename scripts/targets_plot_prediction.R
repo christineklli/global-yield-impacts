@@ -112,12 +112,7 @@ targets_plot_predictions <- list(
                path="results/figures/adjusted_predictions_country_weighted/adjusted_predictions_country_weighted_%s_%s.png"
              )
   ),
-  
-  # calculate global weighted predictions and write as csvs
-  # instead of weighted country -> global
-  # need to exactextractr to global from pixel
-  
-  
+
   # plot adjusted gridded predictions with dots showing spatial distribution of crop production
   tar_target(crop_sf,
              create_crop_production_sf(
@@ -135,10 +130,3 @@ targets_plot_predictions <- list(
                time_periods=time_periods
              ))
 )
-
-
-# now combine the model_spec gridded predictions for each crop to produce model agreement maps
-# there should now be 4 crop map plots with 4 time periods in each plot
-
-
-# repeat with country weighted predictions - also 4 crop map plots with 4 time periods in each plot

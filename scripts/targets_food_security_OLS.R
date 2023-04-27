@@ -198,8 +198,7 @@ targets_food_security_lm <- list(
   
   
   # calculate total production in tons across all crops
-  # this looks pretty reasonable in terms of changes, am guessing most of the 
-  # shortfall in demand comes from growth in population
+
   tar_target(country_baseline_future_production_totals_lm,
              aggregate_country_baseline_future_production(
                country_baseline_future_production_df=country_baseline_future_production_df_lm

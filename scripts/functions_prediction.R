@@ -18,7 +18,7 @@ cross_vars <- function(data, crops, imputations){
 cross_vars_future <- function(data, crops, time_periods, GCMs){
   lapply(1:4, function(j){
     lapply(1:4, function(l){
-      lapply(c(1:2,4:24), function(i){ # THIS HAS CHANGED
+      lapply(c(1:2,4:24), function(i){ 
         data[[j]][[l]][[i]] %>% 
           mutate(crop=crops[j],
                  time_period=time_periods[l],
@@ -97,21 +97,3 @@ pool_across_gcm <- function(predictions, coords_countries){
                                lat = coords_countries$lat), #j (crop), l (time period)
                                  by = c("lon", "lat"))
 }
-
-# investigate outliers
-# 
-# outliers <- tar_read(predictions_by_time_period) %>% 
-#   group_by(model_spec, crop_pooled, time_period) %>% 
-#   summarise(min=min(pred_bar,na.rm=TRUE)) %>% 
-#   mutate(outlier=1)
-#   #print(n=Inf)
-# tar_read(predictions_by_time_period) %>% 
-#   left_join(outliers, by=c("pred_bar"="min", "model_spec", "crop_pooled", "time_period")) %>% 
-#   filter(outlier==1) %>% 
-#   print(n=Inf) 
-
-
-
-# only issue with this method is it will not catch all outliers, only the min per group
-      # identified as the Siwa desert
-# need to define a cut off threshold to make them NA

@@ -109,7 +109,7 @@ targets_prediction <- list(
   
   # transform data for future prediction into tbls for dynamic branching
   tar_target(
-    data_future_nested_list, # THIS HAS CHANGED BY DROPPING ONE GCM
+    data_future_nested_list, 
     cross_vars_future(
       data=prediction_data_complete_cases,
       crops=crops,
@@ -335,50 +335,10 @@ targets_prediction <- list(
                                         "lm"))
                t %>% left_join(df, by=c("model_spec")) %>% 
                  relocate(model) %>% 
-                 relocate(model_spec, .after=last_col()) %>% 
-                 # for outliers, arbitrarily cut off at -200 for now - should mostly be Siwa desert
-                 # note we don't use pred_adj in any way later, so can comment out
-                 mutate(pred_adj=ifelse(pred_bar < -100, NA, pred_bar),
-                        se_p_adj  = ifelse(is.na(pred_adj),NA,se_p),
-                        lwr_p_adj  = ifelse(is.na(pred_adj),NA,lwr_p),
-                        upr_p_adj  = ifelse(is.na(pred_adj),NA,upr_p))
-               
+                 relocate(model_spec, .after=last_col()) 
              }
   ),
-  # calculate global mean predictions
-  # these predictions are not meaningful as they have not been adjusted for current crop spatial distribution
-  # for example, soybean global mean yields are vastly different across gam RS and glm RS
-  # these need to be recalculated with weightings (rasterise) and resaved to results/tables/ 
-  tar_target(global_mean_predictions,
-             {t <- predictions_by_time_period %>% 
-               filter(!is.infinite(pred_bar)) %>% # for lm results
-               group_by(model, time_period, crop_pooled) %>% 
-               summarise(mean_yield_Change = mean(pred_bar, na.rm=T),
-                         mean_se_p         = mean(se_p, na.rm=T),
-                         mean_lwr_p        = mean(lwr_p, na.rm=T),
-                         mean_upr_p        = mean(upr_p, na.rm=T),
-                         # due to outliers, adjusted means
-                         # note we don't use pred_adj in any way later, so can comment out
-                         mean_yield_change_adj = mean(pred_adj, na.rm=T),
-                         mean_se_p_adj         = mean(se_p_adj, na.rm=T),
-                         mean_lwr_p_adj        = mean(lwr_p_adj, na.rm=T),
-                         mean_upr_p_adj        = mean(upr_p_adj, na.rm=T)
-               ) 
-             
-             t %>% readr::write_csv("processed/global_mean_predictions.csv")
-             
-             t
-             
-             }
-             
-  ),
-  
-  # note that the order of models here is not the order defined in model_specs
-  # instead, they are in alphabetical order
-  # so: gam_RI, gam_RS, glm_RI, glm_RS, lm
-  
-  
-  # split into two level nested sublists to prepare for plotting predictions
+# split into two level nested sublists to prepare for plotting predictions
   # [[model_spec]][[crop_pooled]]
   tar_target(predictions_nested,
              {

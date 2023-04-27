@@ -8,10 +8,6 @@ tar_option_set(packages = packages,
                format = "qs" # efficient storage format, need to first install qs
 ) 
 
-# pipeline to fit and compare models
-
-# see whether these could be a list of 4 targets instead? listed? need to edit structure
-
 # Random intercepts AND random slopes -------------------------------------
 
 
@@ -22,9 +18,7 @@ targets_model_gam_glm <- list(
   tar_target(models, fit_models(
     data=crop_imputed_rst_data,
     spec=model_spec)),
-  # plot multiply imputed fit as pooled prediction fitted lines
-  # note multiply_fit is then a non-nested list of 4 crops x 5 imp = 20 model estimates
-  # NOTE THAT WITH::MIDS does NOT take spec[[k]]
+
   # GAM RS
   tar_target(multiply_fit_gam_RS, multiply_imp_for_plot_gam_RS(
     data=crop_list_imp
@@ -54,11 +48,7 @@ targets_model_gam_glm <- list(
                list4=multiply_fit_glm_RI,
                list5=multiply_fit_lm
              )),
-  # expand grid for new prediction pooled lines data
-  # cannot fit fit_lines() on nd, so ignore for now
-  #tar_target(nd, new_data(
-  #  data=AGIMPACTS_bs
-  #)),
+
   # fit lines
   tar_target(fitted_lines, fit_lines( 
     fit=multiply_fit_list,
@@ -70,13 +60,7 @@ targets_model_gam_glm <- list(
   tar_target(grouped_lines_df, rbind_grouped_lines(
     grouped_lines=grouped_lines
   )),
-  # extend these plots further to include precipitation change
-  # and f_CO2 change
-  # also, unconvinced about the prediction confidence intervals - so narrow!
-  # at least relative to the actual data points
-  # do they actually capture the full within-m variance?
-  # though, this is similar to previous plots
-  
+
   tar_target(pooled_fit_plot,
              plot_pooled_lines(
                predictions=grouped_lines_df,
@@ -240,9 +224,7 @@ targets_model_gam_glm <- list(
                    rename(fit_bar=fit_bar_adj,
                           lwr_p=lwr_p_adj,
                           upr_p=upr_p_adj) # rename so that we can use the same plot function
-                 
-                 # adjust confidence intervals
-                 
+               
                })
                
              }),
@@ -266,10 +248,6 @@ targets_model_gam_glm <- list(
   tar_target(adj_all_response_functions_tmp_pre_data,
              {library(patchwork)
     
-    # remove duplicate legend as model colour + shape scale values now match
-    
-    
-    
     plot <-  adj_all_response_functions_plots_with_data_tmp + adj_all_response_functions_plots_with_data_pre
     ggplot2::ggsave(filename="results/figures/adj_all_response_fns_tmp_pre.png",
                     plot=plot,
@@ -280,59 +258,6 @@ targets_model_gam_glm <- list(
   } ),
   
   
-  # repeat response functions on CO2 ------------------------------
-  # Co2 change ranges from [-90, 520] ppm in AGIMPACTS_bs
-  
-  # fit lines
-  tar_target(fitted_lines_co2, fit_lines_co2( 
-    fit=multiply_fit_list,
-    data=AGIMPACTS_bs
-  )),
-  tar_target(grouped_lines_co2, group_fitted_lines(
-    fitted_lines=fitted_lines_co2
-  )),
-  tar_target(grouped_lines_df_co2, rbind_grouped_lines(
-    grouped_lines=grouped_lines_co2
-  )),
-  # rbindlist grouped_lines_df by model_spec
-  tar_target(grouped_lines_tbl_co2,
-             rbindlist(grouped_lines_df_co2, idcol="model_spec")),
-  # adjust response function prediction data to force response through the origin
-  tar_target(adj_grouped_lines_df_co2,
-             {
-               lapply(1:5, function(model){
-                 
-                 fit_zero <- grouped_lines_df_co2[[model]] %>% 
-                   group_by(crop) %>% 
-                   filter(x == 0.00) %>% 
-                   dplyr::select(fit_bar) %>% 
-                   rename(fit_bar_zero=fit_bar)
-                 
-                 grouped_lines_df_pre[[model]] %>% 
-                   left_join(fit_zero, by=c("crop")) %>% 
-                   mutate(fit_bar_adj=fit_bar-fit_bar_zero,
-                          lwr_p_adj=lwr_p-fit_bar_zero,
-                          upr_p_adj=upr_p-fit_bar_zero) %>% 
-                   dplyr::select(!c("fit_bar", "lwr_p", "upr_p")) %>% 
-                   rename(fit_bar=fit_bar_adj,
-                          lwr_p=lwr_p_adj,
-                          upr_p=upr_p_adj) # rename so that we can use the same plot function
-                 
-                 # adjust confidence intervals
-                 
-               })
-               
-             }),
-  
-  tar_target(adj_grouped_lines_tbl_co2,
-             rbindlist(adj_grouped_lines_df_co2, idcol="model_spec")),
-  
-  tar_target(adj_all_response_functions_plots_with_data_co2,
-             plot_all_response_functions_with_data_co2(
-               predictions=adj_grouped_lines_tbl_co2,
-               data=AGIMPACTS_bs,
-               path="results/figures/adj_all_response_function_plots_with_data_co2.png"
-             )),
   # plot model residuals
   # for maize, m=1, for GLMM RIS; GAMM RIS; LM
   tar_target(residuals_maize_glm_rs,

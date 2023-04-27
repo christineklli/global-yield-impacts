@@ -17,7 +17,6 @@ tar_option_set(packages = packages,
 
 # pipeline to create prediction data
 
-# contents of script 13 in agimpacts-precip.RProj
 
 targets_prediction_data_cru <- list(
   tar_target(crop_season_extended_subset,
@@ -102,11 +101,7 @@ targets_prediction_data_cru <- list(
 )
 
 
-
 # create yield data
-# note that script 13 in agimpacts-precip has lots of different yield datasets
-# but due to missing data in GAEZ and GDHY we use only the outdated Monfreda data
-
 targets_prediction_data_monf <- list(
   tar_target(monfreda_yield_files,
              c("data/Monfreda data/maize_YieldPerHectare.tif",
@@ -153,10 +148,8 @@ targets_prediction_data_misc <- list(
                data1=bs_2015_tmp_pre_yld,
                data2=coords_countries
              ))
-  # go back to script 13 in agimpacts-precip if need plots
 )
 
-# contents of script 14 in agimpacts-precip.RProj
 
 targets_prediction_data_cmip <- list(
   tar_target(time_periods,
@@ -220,25 +213,7 @@ targets_prediction_data_cmip <- list(
              clean_prediction_data(
                data=prediction_data
              )),
-  # skip above target and do this in same step as write out
-  # tar_target(prediction_data_complete,
-  #            {sapply(GCMs, 
-  #                    function(x) {
-  #                      write_prediction_data(
-  #                                       data=prediction_data,
-  #                                       time_period = time_periods, 
-  #                                       GCM = x, 
-  #                                       crops = c("Maize", "Rice", "Soy", "Wheat"),
-  #                                       outdir = "processed")
-  #                    })
-  #              # Return list of files
-  #              list.files(path = "processed", 
-  #                         full.names = TRUE,
-  #                         recursive = TRUE,
-  #                         pattern = ".RData")
-  #            },
-  #            format = "file")
-  
+
   # write out output files for input into cloned RCP 4.5 and 2.6 projects
   tar_target(write_tmp_mean_2015, 
              saveRDS(tmp_mean_2015, "processed/tmp_mean_2015.rds")),

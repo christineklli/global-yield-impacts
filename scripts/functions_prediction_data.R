@@ -26,7 +26,7 @@ manipulate_crop_season <- function(data, raster){
 }
 
 # read in CRU temp data for 2011-2020
-# can use this function for tmp and precip!
+# can use this function for tmp and precip
 
 create_cru_prediction_data <- function(file, var_name){
   
@@ -223,32 +223,17 @@ make_crop_yield_monf_dt <- function(raster){
 merge_cru_monf_prediction_data <- function(data1, data2){
   lapply(1:4, function(i){
   data1[[i]] %>% 
-    left_join(data2[[i]], # swap with crop_yields_df[[i]] for GDHY data instead
+    left_join(data2[[i]], 
               by=c("lon","lat"))
 })
 }
-
-# check this by plotting yields as a test
-
-#raster_yields <- bs_2015_tmp_pre_yld[[1]] %>%
-#  dplyr::select(lon, lat, bs_yield)
-
-#raster_yields <- rasterFromXYZ(raster_yields)
-
-#rasterVis::levelplot(raster_yields, 
-#                     col.regions = rev(terrain.colors(10000)))
 
 # add country and adapt dummy 
 
 coords2admin <-  function(points){  
   
   countriesSP <- getMap(resolution='low')
-  #countriesSP <- getMap(resolution='high') #you could use high res map from rworldxtra if you were concerned about detail
-  
-  # convert our list of points to a SpatialPoints object
-  
-  # pointsSP = SpatialPoints(points, proj4string=CRS(" +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
-  
+ 
   #setting CRS directly to that from rworldmap
   pointsSP = SpatialPoints(points, proj4string=CRS(proj4string(countriesSP)))  
   
@@ -258,9 +243,7 @@ coords2admin <-  function(points){
   
   # return the ADMIN names of each country
   indices$ADMIN  
-  #indices$ISO_A2 # returns the ISO3 code 
-  #indices$continent   # returns the continent (6 continent model)
-  #indices$REGION   # returns the continent (7 continent model)
+
   
 }
 
@@ -299,8 +282,6 @@ create_bs_2015_vars <- function(data1, data2){
       rename(Country2_fact = ISO_A2,
              Country_name = ADMIN) %>%
       mutate(Country2_fact=na_if(Country2_fact, "-99"),
-             #Country_int=ifelse(Country_int=="<NA>",NA,Country_int),
-             #Country_name=ifelse(Country_name=="<NA>",NA,Country_name),
              adapt_dummy=0,
              adapt_dummy=as.factor(adapt_dummy),
              C3=0,
@@ -320,8 +301,6 @@ create_bs_2015_vars <- function(data1, data2){
   
 }
 
-
-# time_periods <- c("2021-2040", "2041-2060", "2061-2080", "2081-2100")
 
 
 create_cmip6_pre_df <- function(time_periods){
@@ -381,8 +360,6 @@ get_CO2_data <- function(file){
   nc_CO2_rcp85 <- nc_open(here("data", "CMIP5 data", file))
   
   nc_CO2_var_rcp85 <- ncvar_get(nc_CO2_rcp85, attributes(nc_CO2_rcp85$var)$names[1])
-  
-  #nc_CO2_time_rcp85 <- ncvar_get(nc_CO2_rcp85,attributes(nc_CO2_rcp85$dim)$names[1]) # time, from 0-239
   
   CO2_data <- data.frame(year = c(1860:2100), CO2 = nc_CO2_var_rcp85)
   

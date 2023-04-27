@@ -151,7 +151,7 @@ plot_model_pooled_m_distributions <- function(predictions, time_periods, path, c
 # sampling uncertainty ----------------------------------------------------
 
 
-create_block_bootstrap_samples <- function(data, ncores){ # crop_imputed_rst_data[[crop]][[m]]
+create_block_bootstrap_samples <- function(data, ncores){
   
   future::plan(future::multisession, workers = ncores)
   
@@ -185,7 +185,7 @@ fit_block_bootstrap_nested_first <- function(
     block_bootstrap_samples[[1]][[i]] %>% 
       # for each combination dataset, map over each of 100 bootstrapped samples
       mutate(data=furrr::future_map(splits, ~{
-        as_tibble(rsample::analysis(.x)) %>% # this manages to force class(boot_split, rsplit) into data.frame() 
+        as_tibble(rsample::analysis(.x)) %>% # this forces class(boot_split, rsplit) into data.frame() 
           unnest(cols=c(data))
       }),
       # to fit 5 model specifications
@@ -193,7 +193,7 @@ fit_block_bootstrap_nested_first <- function(
                                          method = 'REML',
                                          family = 'gaussian',
                                          data=.x)}),
-      #model_tidy=map(model,tidy), # this is nice but unnecessary for our prediction purposes
+     
       # add model attributes to identify crop/model/m states 
       crop=purrr::map(data, ~{.x$crop_pooled[1]}),
       model_specs=purrr::map(data, ~{model_specs[1]}), 
@@ -448,13 +448,3 @@ plot_bootstrap_distributions_grid <- function(predictions, path){
   
   
 }
-
-# calculate proportions of missing data
-# 
-# tar_read(AGIMPACTS_bs_tp) %>% 
-#   group_by(crop_pooled) %>% 
-#   summarise(temp=sum(!is.na(Temp.Change))/n(),
-#             yield=sum(!is.na(Yield.Change))/n(),
-#             precip=sum(!is.na(Precipitation.change))/n(),
-#             co2=sum(!is.na(CO2.Change))/n())
-#   

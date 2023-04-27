@@ -17,7 +17,7 @@ create_int_adj_prediction_data <- function(prediction_data, time_periods, GCMs){
     df <- l[[i]] %>% 
       mutate(Temp.Change=0,
              Precipitation.change=0,
-             f_CO2=0)   # technically should be infinite but doesn't matter %>% 
+             f_CO2=0)   
     # rep by gcm
     df_a <- purrr::map(seq_len(24), ~df) %>% 
       bind_rows(.id="gcm_no")
@@ -136,7 +136,6 @@ rasterise_conf_gridded <- function(predictions, time_periods, var){ # prediction
         r <- x %>% filter(time_period==time_periods[[i]]) %>% 
           dplyr::select(c("lon","lat",!!sym(var))) # quasiquotation can only be used in tidyverse functions
         
-        #x[x$time_period==time_periods[[i]], c("lon", "lat", var] 
         r <- raster::rasterFromXYZ(r)
         crs(r) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0" 
         names(r) <- time_periods[[i]]
@@ -147,9 +146,7 @@ rasterise_conf_gridded <- function(predictions, time_periods, var){ # prediction
       
     })
     
-    # these don't span entire globe? ymin -55 only not -90!!?
-    # terra::rast(r_2021_2040, "xyz") throws an error
-    #https://future.futureverse.org/articles/future-4-non-exportable-objects.html#packages-that-rely-on-external-pointers
+   
   }) 
   
   

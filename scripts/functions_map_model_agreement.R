@@ -17,7 +17,7 @@ calc_model_agreement <- function(predictions, threshold, ncores){
     mutate(sign=ifelse(
       (mean_pred_bar <0 & pred_bar <0) | (mean_pred_bar > 0 & pred_bar > 0), 20, 0)) %>% 
     summarise(model_agreement = sum(sign)) %>% 
-    mutate(agreement = ifelse(model_agreement >= threshold, 1, 0)) # can inspect after this 
+    mutate(agreement = ifelse(model_agreement >= threshold, 1, 0)) 
   
   # split df into nested list by crop
   
@@ -97,7 +97,7 @@ plot_model_agreement <- function(predictions, model_agreement_sf, time_periods,
                         style = "cont",
                         breaks=seq(-100,100,10), 
                         # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-                        # remove range restriction when we remove outliers in the prediction data
+                    
                         palette = rev(terrain.colors(100))) +
         tmap::tm_shape(model_agreement_sf[[crop]][[time]]) +
         tmap::tm_dots(size=0.00000001,shape=1, alpha=0.05) + # open circle shape

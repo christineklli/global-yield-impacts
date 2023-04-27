@@ -14,8 +14,8 @@ model_spec <- c(
     f_CO2:C4 +
     adapt_dummy +
     Temp.Change:adapt_dummy +
-    s(Reference_fact, bs='re') + # random intercept
-    s(Temp.Change, Reference_fact, bs = 're') + # random slope - order of vars shouldnt matter
+    s(Reference_fact, bs='re') + 
+    s(Temp.Change, Reference_fact, bs = 're') + 
     s(Precipitation.change, Reference_fact, bs = 're') +
     s(f_CO2, Reference_fact, bs = 're') +
     s(Country2_fact, bs = 're'),
@@ -31,10 +31,7 @@ model_spec <- c(
     f_CO2:C4 +
     adapt_dummy +
     Temp.Change:adapt_dummy +
-    s(Reference_fact, bs='re') + # random intercept
-    #s(Temp.Change, Reference_fact, bs = 're') + # random slope - order of vars shouldnt matter
-    #s(Precipitation.change, Reference_fact, bs = 're') +
-    #s(f_CO2, Reference_fact, bs = 're') +
+    s(Reference_fact, bs='re') + 
     s(Country2_fact, bs = 're'),
   
   # glmm relative
@@ -66,9 +63,6 @@ model_spec <- c(
     adapt_dummy +
     Temp.Change:adapt_dummy +
     s(Reference_fact, bs = 're') + 
-    #s(Temp.Change, Reference_fact, bs = 're') + 
-    #s(Precipitation.change, Reference_fact, bs = 're') +
-    #s(f_CO2, Reference_fact, bs = 're') +
     s(Country2_fact, bs = 're'),
   
   # LM
@@ -133,15 +127,8 @@ fit_lm <- function(data, spec){
 
 # plot multiply model response functions ----------------------------------
 
-# use imp terminology and workflow exactly same as in Solomon Kurz
 
 multiply_imp_for_plot_gam_RS <- function(data){
-  
-  # hopefully the fact that we had to force Reference_int instead of
-  # Reference_fact does not change the model estimates?
-  # we couldn't use Reference_fact in imputation process...
-  # anyway this is only the case for pooled response functions
-  # not for the predictions and plotted predictions themselves
   
   # break out imputed data into 4 crop data sets- right now all are pooled
   
@@ -156,8 +143,8 @@ multiply_imp_for_plot_gam_RS <- function(data){
                                             f_CO2:C4 +
                                             adapt_dummy +
                                             Temp.Change:adapt_dummy +
-                                            s(Reference_int, bs='re') + # random intercept
-                                            s(Temp.Change, Reference_int, bs = 're') + # random slope - order of vars shouldnt matter
+                                            s(Reference_int, bs='re') + 
+                                            s(Temp.Change, Reference_int, bs = 're') + 
                                             s(Precipitation.change, Reference_int, bs = 're') +
                                             s(f_CO2, Reference_int, bs = 're') +
                                             s(Country2_fact, bs = 're'),
@@ -180,13 +167,6 @@ multiply_imp_for_plot_gam_RS <- function(data){
 
 multiply_imp_for_plot_gam_RI <- function(data){
   
-  # hopefully the fact that we had to force Reference_int instead of
-  # Reference_fact does not change the model estimates?
-  # we couldn't use Reference_fact in imputation process...
-  # anyway this is only the case for pooled response functions
-  # not for the predictions and plotted predictions themselves
-  
-  # break out imputed data into 4 crop data sets- right now all are pooled
   
   unnested_list <- lapply(1:4, function(i){
     mice:::with.mids(data[[i]], mgcv::gam(Yield.Change ~ 0 +
@@ -199,10 +179,7 @@ multiply_imp_for_plot_gam_RI <- function(data){
                                             f_CO2:C4 +
                                             adapt_dummy +
                                             Temp.Change:adapt_dummy +
-                                            s(Reference_int, bs='re') + # random intercept
-                                            #s(Temp.Change, Reference_fact, bs = 're') + # random slope - order of vars shouldnt matter
-                                            #s(Precipitation.change, Reference_fact, bs = 're') +
-                                            #s(f_CO2, Reference_fact, bs = 're') +
+                                            s(Reference_int, bs='re') + 
                                             s(Country2_fact, bs = 're'),
                                           method='REML',
                                           family='gaussian'))
@@ -222,13 +199,6 @@ multiply_imp_for_plot_gam_RI <- function(data){
 
 multiply_imp_for_plot_glm_RS <- function(data){
   
-  # hopefully the fact that we had to force Reference_int instead of
-  # Reference_fact does not change the model estimates?
-  # we couldn't use Reference_fact in imputation process...
-  # anyway this is only the case for pooled response functions
-  # not for the predictions and plotted predictions themselves
-  
-  # break out imputed data into 4 crop data sets- right now all are pooled
   
   unnested_list <- lapply(1:4, function(i){
     mice:::with.mids(data[[i]], mgcv::gam(Yield.Change ~ 0 + 
@@ -266,12 +236,6 @@ multiply_imp_for_plot_glm_RS <- function(data){
 
 multiply_imp_for_plot_glm_RI <- function(data){
   
-  # hopefully the fact that we had to force Reference_int instead of
-  # Reference_fact does not change the model estimates?
-  # we couldn't use Reference_fact in imputation process...
-  # anyway this is only the case for pooled response functions
-  # not for the predictions and plotted predictions themselves
-  
   # break out imputed data into 4 crop data sets- right now all are pooled
   
   unnested_list <- lapply(1:4, function(i){
@@ -286,9 +250,6 @@ multiply_imp_for_plot_glm_RI <- function(data){
                                             adapt_dummy +
                                             Temp.Change:adapt_dummy +
                                             s(Reference_int, bs = 're') + 
-                                            #s(Temp.Change, Reference_fact, bs = 're') + 
-                                            #s(Precipitation.change, Reference_fact, bs = 're') +
-                                            #s(f_CO2, Reference_fact, bs = 're') +
                                             s(Country2_fact, bs = 're'),
                                           method='REML',
                                           family='gaussian'))
@@ -309,11 +270,6 @@ multiply_imp_for_plot_glm_RI <- function(data){
 
 multiply_imp_for_plot_lm <- function(data){
   
-  # hopefully the fact that we had to force Reference_int instead of
-  # Reference_fact does not change the model estimates?
-  # we couldn't use Reference_fact in imputation process...
-  # anyway this is only the case for pooled response functions
-  # not for the predictions and plotted predictions themselves
   
   # break out imputed data into 4 crop data sets- right now all are pooled
   
@@ -377,27 +333,21 @@ fit_lines <- function(fit, data){
   
   lapply(1:5, function(k){
     
-    #v = c(0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
     
     lapply(1:4, function(i, k){ # crop subscripts
       
       tibble(.imp=1:5) %>% # m subscripts
         mutate(p=purrr::map(.imp, ~ 
                               ggpredict(fit[[k]][[i]]$analyses[[.]],
-                                        terms = c("Temp.Change [0:5 by=0.25]"#,
-                                                  #"Baseline_tmp [5:25, by= 5]"
+                                        terms = c("Temp.Change [0:5 by=0.25]"
                                         ),
                                         typical = "median", # bs temp and bs precip
-                                        condition = c(Precipitation.change =0, # change this
+                                        condition = c(Precipitation.change =0, 
                                                       adapt_dummy = 0, f_CO2 = 0, 
                                                       Reference_fact = 0, Country2_fact = 0),
                                         type = "random")  %>% 
                               data.frame())) %>% 
-        unnest(p) #%>% 
-      # add in the nd predictor data
-      #bind_cols(
-      #  bind_rows(replicate(5, data, simplify = FALSE))
-      #)
+        unnest(p) 
       
     }, k)
     
@@ -415,14 +365,10 @@ group_fitted_lines <- function(fitted_lines){
       
       m <- 5
       
-      # pooled predictions could be really choppy because of how 
-      # continuous the distribution of x is (i.e. 1381 rows of x from -4 to 5)
-      # overfitting?
-      # or that predictions are really different across m
       
       fitted_lines[[k]][[i]] %>% 
-        group_by(x#, group
-        ) %>% # x = temp.change, group = precipitation.change
+        group_by(x
+        ) %>% 
         summarise(fit_bar = mean(predicted),
                   v_w     = mean(std.error^2),
                   v_b     = sum((predicted - fit_bar)^2) / (m - 1),
@@ -468,13 +414,7 @@ plot_pooled_lines <- function(predictions, data){
     # crop facet labels
     crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
     names(crop_labs) <- c("1","2","3","4")
-    # precipitation change facet labels
-    #group_labs <- c("-100%", "0%", "100%")
-    #names(group_labs) <- c("-100", "0", "100")
-    
-    
-    #predictions %>% 
-    # filter(x>=0 & x<=5) %>% 
+
     ggplot() +
       geom_line(data = predictions[[k]][x>=0 & x<=5,],
                 aes(x=x, y = fit_bar), 
@@ -497,11 +437,7 @@ plot_pooled_lines <- function(predictions, data){
       ) +
       facet_wrap(facets=vars(crop),
                  labeller=labeller(crop=crop_labs))
-    #facet_grid(cols=vars(crop),
-    #           rows=vars(group),
-    #           labeller = labeller(crop=crop_labs#,
-    #                               #group=group_labs
-    #                               )) 
+
     
   })
   
@@ -512,16 +448,10 @@ plot_pooled_lines <- function(predictions, data){
 
 save_plots_reponse_functions <- function(plots, path, spec_no){
   
-  # save plots as png
-  #png(paste(path,j,l, ".png", sep="_"))
-  
   ggsave(filename=path,
          plot=plots[[spec_no]],
          width=7, height=6)
   
-  
-  #dev.off()
-  #paste(path,j,l, ".png", sep="_")
   
 }
 
@@ -534,9 +464,7 @@ plot_all_response_functions <- function(predictions, path){
   # crop facet labels
   crop_labs <- c("Maize", "Rice", "Soy", "Wheat")
   names(crop_labs) <- c("1","2","3","4")
-  #model_spec_labs <- c("gam_RS", "gam_RI", "glm_RS", "glm_RI", "lm")
-  #names(model_spec_labs) <- c("1","2","3","4","5")
-  
+ 
   plot <- ggplot() +
     geom_line(data = predictions[x>=0 & x<=5,],
               aes(x=x, y = fit_bar, colour = model_spec), 
@@ -546,7 +474,6 @@ plot_all_response_functions <- function(predictions, path){
                     fill = model_spec),
                 alpha = 0.1) +
     theme_bw() +
-    #theme(legend.position="none") +
     labs(x="Temperature Change (°C)",
          y="Fitted Yield Change (%)") +
     scale_colour_discrete(
@@ -599,7 +526,6 @@ plot_all_response_functions_with_data <- function(predictions, data, path){
                     fill = model_spec),
                 alpha = 0.1) +
     theme_bw() +
-    #theme(legend.position="none") +
     labs(x="Temperature Change (°C)",
          y="Fitted Yield Change (%)") +
     scale_colour_discrete(
@@ -649,7 +575,6 @@ plot_all_response_functions_with_lit <- function(data, predictions, path){
                     fill = model_spec),
                 alpha = 0.1) +
     theme_bw() +
-    #theme(legend.position="none") +
     labs(x="Temperature Change (°C)",
          y="Fitted Yield Change (%)") +
     scale_colour_discrete(
@@ -691,15 +616,13 @@ fit_lines_pre <- function(fit, data){
   
   lapply(1:5, function(k){
     
-    #v = c(0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
     
     lapply(1:4, function(i, k){ # crop subscripts
       
       tibble(.imp=1:5) %>% # m subscripts
         mutate(p=purrr::map(.imp, ~ 
                               ggpredict(fit[[k]][[i]]$analyses[[.]],
-                                        terms = c("Precipitation.change [-100:100 by=5]"#,
-                                                  #"Baseline_tmp [5:25, by= 5]"
+                                        terms = c("Precipitation.change [-100:100 by=5]"
                                         ),
                                         typical = "median", # bs temp and bs precip
                                         condition = c(Temp.Change =0, # change this
@@ -707,11 +630,8 @@ fit_lines_pre <- function(fit, data){
                                                       Reference_fact = 0, Country2_fact = 0),
                                         type = "random")  %>% 
                               data.frame())) %>% 
-        unnest(p) #%>% 
-      # add in the nd predictor data
-      #bind_cols(
-      #  bind_rows(replicate(5, data, simplify = FALSE))
-      #)
+        unnest(p) 
+  
       
     }, k)
     
@@ -849,27 +769,20 @@ fit_lines_co2 <- function(fit, data){
   
   lapply(1:5, function(k){
     
-    #v = c(0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5)
-    
     lapply(1:4, function(i, k){ # crop subscripts
       
       tibble(.imp=1:5) %>% # m subscripts
         mutate(p=purrr::map(.imp, ~ 
                               ggpredict(fit[[k]][[i]]$analyses[[.]],
-                                        terms = c("f_CO2 [-10:3 by=0.1]"#,
-                                                  #"Baseline_tmp [5:25, by= 5]"
+                                        terms = c("f_CO2 [-10:3 by=0.1]"
                                         ),
                                         typical = "median", # bs temp and bs precip
-                                        condition = c(Temp.Change =0, # change this
+                                        condition = c(Temp.Change =0, 
                                                       adapt_dummy = 0, Precipitation.change = 0,
                                                       Reference_fact = 0, Country2_fact = 0),
                                         type = "random")  %>% 
                               data.frame())) %>% 
-        unnest(p) #%>% 
-      # add in the nd predictor data
-      #bind_cols(
-      #  bind_rows(replicate(5, data, simplify = FALSE))
-      #)
+        unnest(p) 
       
     }, k)
     
@@ -909,7 +822,6 @@ plot_all_response_functions_with_data_co2 <- function(predictions, data, path){
                     fill = model_spec),
                 alpha = 0.1) +
     theme_bw() +
-    #theme(legend.position="none") +
     labs(x="f(CO2)",
          y="Fitted Yield Change (%)") +
     xlim(-10, 10) +

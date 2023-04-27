@@ -1,6 +1,3 @@
-# https://github.com/ropensci/targets/discussions/850
-# modularise target pipeline
-
 
 # Read in and clean scraped CGIAR data ----------------------------------------------
 
@@ -30,7 +27,7 @@ extract_country_crop_production <- function(files, map_boundaries){
   lapply(1:4, function(i){ 
      crop_production <- raster(files[i])
   crop_production_country <- raster::extract(crop_production, 
-                                             map_boundaries, # or make this an explicit argument
+                                             map_boundaries, 
                                              fun = sum, 
                                              na.rm = TRUE) # 243 countries
   crop_country_df <- as.data.frame(crop_production_country)
@@ -102,20 +99,17 @@ join_multicountry <- function(data, crop_production_names){
 }
 
 
-rank_country_by_crop <- function(data, crop_production_names){ # may need to make this 1:4 function as list
+rank_country_by_crop <- function(data, crop_production_names){ 
   lapply(1:4, function(i){
      df <- data[[i]] %>% 
   group_by(index, crop) %>% 
-  # currently index describes the 66 (study, crop) groups
+
   summarise(min_Y = min(rank_Y, na.rm = TRUE)) %>% 
     left_join(dplyr::select(crop_production_names[[i]], Country, rank_Y), 
               by = c("min_Y" = "rank_Y"))  %>% 
     dplyr::select(!c("min_Y")) 
   })
 }
-
-# instead of keeping by column in previous code, keep by list index number
-# but in a single data frame
 
 country_crop_ranked_df <- function(y){
   data.frame(index=y[[1]]$index,
@@ -196,7 +190,7 @@ nc_folder_path <- function(folder){
 read_sacks <- function(files){
   
   lapply(1:7, function(i){
-    # may need to change this in future: depending on number of nc files saved in folder
+    # only 7 nc files saved in folder
     # open a connection to the ith nc file
     nc_crop <- nc_open(here("data", "Sacks data", files[i]))
     # store values from variables and attributes
@@ -221,13 +215,11 @@ read_sacks <- function(files){
     crop_calendar_df$harvest <- reshape::melt(nc_crop_harvest)
     crop_calendar_df$harvest <- crop_calendar_df$harvest$value
     # note crop file names are long, need to chop these 
-    # but also later harmonise across datasets
+    # later harmonise across datasets
     crop_calendar_df$crop <- files[i]
     crop_calendar_df$crop <- substr(crop_calendar_df$crop, 1, 
                                  nchar(crop_calendar_df$crop)-22)
 
-    # incredibly problematic - the lon and lats have floating point decimals that are extremely small
-    # these need to be rounded to 2 digits!!
     crop_calendar_df$lon <- round(crop_calendar_df$lon,2)
     crop_calendar_df$lat <- round(crop_calendar_df$lat,2)
     
@@ -287,9 +279,6 @@ wrangle_mirca_data <- function(data){
 
 
 # create crop calendar data ----------------------
-
-# merge
-# think about this function - is there a better way to create crop calendar dataset?
 
 create_crop_calendar <- function(sacks, mirca){
   rbind(sacks, mirca) %>% 
@@ -367,7 +356,7 @@ extend_raster_crop_season <- function(raster){
   
 
 extract_country_crop_season <- function(raster, map_boundaries){
-  lapply(1:15, function(i){ # renamed this from formerly crop_season_tmp, need to make sure later dependencies reflect this
+  lapply(1:15, function(i){ 
   crop <- raster::extract(raster[[i]], 
                           map_boundaries, fun = mean, na.rm = TRUE)
   crop <- as.data.frame(crop)
@@ -382,7 +371,7 @@ extract_country_crop_season <- function(raster, map_boundaries){
 # create concordance df
 # relate 15 unique crop types from MIRCA to just 4 crop types
 create_crop_season_concordance <- function(data){
-  # unique(tar_read(crop_season_df)$crop) # see the order of 15 unique crop names
+ # see the order of 15 unique crop names
   data.frame(crop_no = c(1:15), # 15 unique crops
              crop_name = unique(data$crop)) %>% 
     # aggregate to 4 crop types
@@ -489,7 +478,7 @@ prep_baseline_gs_vars <- function(data1, data2, var){
   x %>% 
     filter(crop_name %in% crop_concordance$GROWING_SEASON_CROP) %>% 
     left_join(crop_concordance, by = c("crop_name" = "GROWING_SEASON_CROP")) %>% 
-    relocate(NAME, ISO_A2, crop_name, AGIMPACTS_BASELINE_CROP) %>% # note this has increased the number of rows by replicating crop-dependent tmp for the other crop categories of AGIMPACTS_BASELINE_CROP, i.e. durum and spring wheat 
+    relocate(NAME, ISO_A2, crop_name, AGIMPACTS_BASELINE_CROP) %>% 
     rename(baseline_crop = AGIMPACTS_BASELINE_CROP,
            season_crop = crop_name) %>% 
     filter(!NAME == "Ashmore and Cartier Is.")
@@ -510,15 +499,14 @@ filter_baseline_periods_cgiar <- function(data){
   mutate(Baseline.start = replace(
     Baseline.start, 
     Baseline.start == 1901, 1950)) 
-  # manually changed to 1950 - at some point can compute over 1901-2001
-  
+ 
 }
   
 create_dt_baseline_gs_var <- function(data, var, gs_production_data){
   
   # loop through unique baseline period 'groups' in cgiar data
 
-  list <- lapply(1:nrow(data), function(i){ # should be 333 rows/groups
+  list <- lapply(1:nrow(data), function(i){ # should give 333 rows/groups
     
     period_i <- data[i,]
     
@@ -531,7 +519,8 @@ create_dt_baseline_gs_var <- function(data, var, gs_production_data){
     # average over temperature values in baseline period columns 
     avg <- gs_production_data %>%
       filter(ISO_A2 %in% period_i$Country2 & baseline_crop %in% period_i$Crop) %>% 
-      dplyr::select(all_of(baseline_vars)) %>% # use external vector to select columns in growing_season_tmp_series
+      dplyr::select(all_of(baseline_vars)) %>% 
+      # use external vector to select columns in growing_season_tmp_series
       rowMeans() 
     
     avg <- as.data.frame(avg)
@@ -570,9 +559,7 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
       left_join(data2, 
                 by = c("Crop", "Country2", "Baseline.start", "Baseline.end")) %>% 
       dplyr::select(!c("n", "nyears")) %>% 
-      rename(Baseline_tmp = avg) %>% # note we are renaming from
-      # Baseline_tmp_weighted to Baseline_tmp; 
-      # this will need to be adjusted for future targets in all future scripts
+      rename(Baseline_tmp = avg) %>% 
       left_join(data3,
                 by = c("Crop", "Country2", "Baseline.start", "Baseline.end")) %>% 
       dplyr::select(!c("n", "nyears")) %>% 
@@ -621,7 +608,8 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
       
       # transform into dataframe
       colnames(yields) <- c(seq(-89.75, 89.75, 0.5)) # lat
-      rownames(yields) <- c(seq(0.25, 359.75, 0.5)) # lon, this needs to be converted from -180 to 180 # -179.75, 179.75, 0.5
+      rownames(yields) <- c(seq(0.25, 359.75, 0.5)) # lon
+      #, this needs to be converted from -180 to 180 # -179.75, 179.75, 0.5
       
       # regularise by converting to raster and performing exactextractr 
       
@@ -631,12 +619,6 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
       m_raster_yields <- flip(t(raster_yields), direction = 'y')
       
       rm_raster_yields <- rotate(m_raster_yields)
-      
-      #plot(rm_raster_yields)
-      
-      #rasterVis::levelplot(rm_raster_yields, 
-      #                     col.regions = rev(terrain.colors(10000)))
-      # at = seq(-100,100))
       
       ghdy_country_yields <- exact_extract(rm_raster_yields, map_boundaries, 'mean')
       
@@ -712,7 +694,6 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
   }
 
   
-  # FIX THIS - this does not work!
   plot_imputed_data <- function(imp, path1){
     
     # plot and save imputed data density plot
@@ -721,11 +702,6 @@ create_crop_country_volume_df <- function(raster, map_boundaries){
     dev.off()
     path1
     
-    # plot and save imputed data convergence
-    #png(here("results", "figures", path2))
-    #densityplot(imp)
-    #dev.off()
-    #path2
     
   }
   

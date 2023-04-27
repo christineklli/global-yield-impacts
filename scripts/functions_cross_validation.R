@@ -303,18 +303,14 @@ plot_all_m_cv <- function(data, path){
     geom_point(
       aes(x=`Model ID`, y=mean_RMSE), 
       col="black", shape=21, size = 2, alpha=1) +
-    # scale_shape_discrete(
-    #   name="Model ID",
-    #   labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-    #   breaks=c("1","2","3","4","5")
-    # ) +
+
     facet_wrap(~crop_no, ncol=4,
                labeller=labeller(crop_no=crop.labs)
                ) +
     scale_colour_discrete(
       name="Model ID",
       labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")#,
-      #breaks=c("1","2","3","4","5")
+
     ) +
     labs(y="Mean Model RMSE from k-fold CV") +
     theme(axis.title.x=element_blank(),
@@ -323,10 +319,7 @@ plot_all_m_cv <- function(data, path){
           ) + 
     # to combine with dev.explained.all plot later
     theme(legend.position="none")
-    # scale_x_discrete(name="Model ID",
-    #                  labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-    #                  breaks=c("1","2","3","4","5")) 
-  # add mean RMSE across m
+
 
   ggplot2::ggsave(filename=path,
                   plot=plot,

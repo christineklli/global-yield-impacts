@@ -3,7 +3,8 @@
 # instead, they are in alphabetical order
 # so: gam_RI, gam_RS, glm_RI, glm_RS, lm
 
-rasterise_predictions_gridded <- function(predictions, time_periods){ # predictions_nested - this produces a raster stack?
+rasterise_predictions_gridded <- function(predictions, time_periods){ 
+
   lapply(1:5, function(model){ 
     lapply(1:4, function(crop){  
       
@@ -22,9 +23,6 @@ rasterise_predictions_gridded <- function(predictions, time_periods){ # predicti
       
     })
     
-    # these don't span entire globe? ymin -55 only not -90!!?
-    # terra::rast(r_2021_2040, "xyz") throws an error
-    #https://future.futureverse.org/articles/future-4-non-exportable-objects.html#packages-that-rely-on-external-pointers
   }) 
   
   
@@ -43,7 +41,7 @@ plot_predictions_gridded <- function(predictions, returnStack, World, model_spec
                         style = "cont",
                         breaks=seq(-100,100,10), 
                         # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-                        # remove range restriction when we remove outliers in the prediction data
+                      
                         palette = rev(terrain.colors(100))) +
         tmap::tm_shape(World) +
         tmap::tm_borders("grey", lwd =1) + 
@@ -81,7 +79,6 @@ create_crop_production_raster_agg <- function(crop_production_rasters){
   })
 }
 
-# may need to recalculate this with area-weighting!
 create_country_predictions_tbl <- function(predictions, 
                                            lwr_bound,
                                            upr_bound,
@@ -173,7 +170,7 @@ plot_country_predictions <- function(predictions, worldmap_clean,
                         style = "cont",
                         breaks=seq(-100,100,10), 
                         # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-                        # remove range restriction when we remove outliers in the prediction data
+                      
                         palette = rev(terrain.colors(100))) +
         tmap::tm_shape(World) +
         tmap::tm_borders("grey", lwd =1) + 
@@ -227,7 +224,7 @@ plot_with_dots <- function(predictions, crop_sf, time_periods,
                           style = "cont",
                           breaks=seq(-100,100,10), 
                           # ^ this is chosen manually to disregard skewing/scaling effects of Siwa desert outliers
-                          # remove range restriction when we remove outliers in the prediction data
+                         
                           palette = rev(terrain.colors(100))) +
           tmap::tm_shape(crop_sf[[crop]]) +
           tmap::tm_dots(size=0.00000001,shape=1, alpha=0.05) + # open circle shape

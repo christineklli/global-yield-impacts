@@ -23,15 +23,6 @@ targets_cross_validation <- list(
   )),
 
 
-# tar_read(model_cv_dt) %>% readr::write_csv(here("processed", "model_cv_dt.csv")) # 17/11/22 11.59AM
-
-# for maize - GAMM best on 5/5 m with GLMM in 2nd place
-# for rice - GLMM best on 4/5m with GAMM in 2nd place on 4/5m, GAMM best on 1/5 with GLMM in 2nd place
-# for soy - GAMM best on 3/5 with GLMM in 2nd place; GLMM best in 2/5 with GAMM in 2nd place
-# for wheat - GLMM best on 3/5 with GAMM in 2nd place; GAMM best on 2/5 with GLMM in 2nd place
-
-# ok justification to use GAMM/GLMM
-
 # repeat cv but on all 5 models
 
 tar_target(model_cv_1to5, apply_cv_all_models(
@@ -89,41 +80,6 @@ tar_target(fit_estimates_tbl,
            }
 ),
 
-# plot dev.expl for temperature and precipitation
-tar_target(dev_explained_plot,
-           {
-             dat <- fit_estimates_tbl %>% 
-               group_by(crop, model) %>% 
-               summarise(mean_r.sq=mean(r.sq),
-                         mean_dev.expl=mean(dev.expl)) 
-             
-             plot <- ggplot(data=dat) +
-               geom_point(
-                 aes(x=crop, y=mean_dev.expl,
-                     shape=model, col=model), size = 4, alpha=0.7) +
-               # I want these to match with cv_plot in targets_cross_validation.R
-               # so that we can plot these on same plot
-               scale_shape_manual(
-                 name="Model ID",
-                 labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-                 breaks=c("gam_RS","gam_RI","glm_RS","glm_RI","lm"),
-                 values=c(16,17,15,3,7)
-               ) +
-               scale_colour_manual(
-                 name="Model ID",
-                 labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-                 breaks=c("gam_RS","gam_RI","glm_RS","glm_RI","lm"),
-                 values=c("darksalmon","darkkhaki","aquamarine3","deepskyblue","darkorchid1")
-               ) +
-               labs(x="Crop", y="Mean Deviance Explained") 
-             
-             ggplot2::ggsave(filename="results/figures/dev_explained_plot.png",
-                             plot=plot,
-                             width=7, height=6)
-             
-             plot
-           }
-),
 # plot in a faceted grid with full distribution
 tar_target(dev_explained_plot_all,
            {
@@ -143,21 +99,10 @@ tar_target(dev_explained_plot_all,
                geom_point(
                  aes(x=model, y=mean_dev.expl), 
                  col="black", shape=21, size = 2, alpha=1) +
-               # I want these to match with cv_plot in targets_cross_validation.R
-               # # so that we can plot these on same plot
-               # scale_shape_manual(
-               #   name="Model ID",
-               #   labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-               #   breaks=c("gam_RS","gam_RI","glm_RS","glm_RI","lm"),
-               #   values=c(16,17,15,3,7)
-               # ) +
+              
                facet_wrap(~crop, ncol=4
                ) +
-               # scale_colour_discrete(
-               #   name="Model ID",
-               #   labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM")#,
-               #   #breaks=c("1","2","3","4","5")
-               # ) +
+              
 
                theme(axis.title.x=element_blank(),
                      axis.text.x = element_blank(),
@@ -180,55 +125,9 @@ tar_target(dev_explained_plot_all,
            }
 ),
 
-
-# combine cv_plot and dev_explained_plot
-tar_target(cv_devexp_plot,
-           {library(patchwork)
-             
-             # remove duplicate legend as model colour + shape scale values now match
-             
-             dat <- model_cv_1to5_dt %>% 
-               group_by(crop_no, `Model ID`, Dependent, Fixed) %>% 
-               summarise(mean_RMSE=mean(RMSE),
-                         mean_MAE=mean(MAE)) %>% 
-               mutate(`Model ID`=as.factor(`Model ID`)) %>% 
-               mutate(crop_no=as.factor(crop_no))
-             
-             cv_plot <- ggplot(data=dat) +
-               geom_point(
-                 aes(x=crop_no, y=mean_RMSE,
-                     shape=`Model ID`, col=`Model ID`), size = 4, alpha=0.5) +
-               scale_shape_discrete(
-                 name="Model ID",
-                 labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-                 breaks=c("1","2","3","4","5")
-               ) +
-               scale_colour_discrete(
-                 name="Model ID",
-                 labels=c("GAM RS", "GAM RI", "GLM RS", "GLM RI", "LM"),
-                 breaks=c("1","2","3","4","5")
-               ) +
-               labs(y="Mean Model RMSE from k-fold CV") +
-               scale_x_discrete(name="Crop",
-                                labels=c("Maize","Rice","Soy","Wheat"),
-                                breaks=c("1","2","3","4")) + 
-               theme(legend.position="none") # REMOVE HERE
-             
-             plot <-  cv_plot + dev_explained_plot
-             ggplot2::ggsave(filename="results/figures/combined_cv_devexp_plot.png",
-                             plot=plot,
-                             width=7, height=6)
-             
-             plot
-           }
-),
-# not just mean RMSE and dev.expl but all of them by m
+# not just mean RMSE and dev.expl but all m
 tar_target(cv_devexp_plot_all,
            {library(patchwork)
-             
-             # remove duplicate legend as model colour + shape scale values now match
-             
-            
              
              plot <-  cv_plot_all_m / dev_explained_plot_all
              ggplot2::ggsave(filename="results/figures/combined_cv_devexp_plot_all.png",
@@ -242,5 +141,3 @@ tar_target(cv_devexp_plot_all,
 
 
 )
-
-#tar_read(model_cv_1to5_dt) %>% readr::write_csv(here("processed", "model_cv_1to5_dt.csv")) # 15/12/22 2.18PM
