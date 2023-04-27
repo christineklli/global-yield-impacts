@@ -9,8 +9,9 @@ editor_options:
 This repository contains all code used to generate SSP5-RCP8.5 estimates
 for the manuscript, "Predicting changes in agricultural yields from
 climate change scenarios and their implications for global food
-security" (April 27, 2023). All analysis was performed in the R.4.2.2.
-environment.
+security" (April 27, 2023). The separate repositories used to estimate
+outputs for SSP1-RCP2.6 and SSP2-RCP4.5 can be made available upon
+request. All analysis was performed in the R.4.2.2. environment.
 
 ## Scripts
 
@@ -159,8 +160,3 @@ Files `iRCP3PD_CO2_1860_2100.nc`, `iRCP45_CO2_1860_2100.nc`,
 > KC, S. & Lutz, W. The human core of the shared socioeconomic pathways:
 > Population scenarios by age, sex and level of education for all
 > countries to 2100. Global Environmental Change 42, 181--192 (2017).
-
-## Other scenarios
-
-The separate repositories used to estimate outputs for SSP1-RCP2.6 and
-SSP2-RCP4.5 can be made available upon request.
