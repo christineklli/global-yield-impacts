@@ -35,11 +35,7 @@ source("scripts/functions_uncertainty.R")
 source("scripts/targets_uncertainty.R")
 source("scripts/functions_map_model_agreement.R")
 source("scripts/targets_map_model_agreement.R")
-source("scripts/functions_moore.R")
-source("scripts/targets_moore.R")
 source("scripts/targets_food_security.R")
-# source("scripts/functions_historical.R")
-# source("scripts/targets_historical.R")
 
 # need to define packages in this file
 packages <- c("rvest", "dplyr", "tidyr", "janitor", "forecast","data.table", "ggplot2","readxl", 
@@ -91,9 +87,7 @@ list(
   targets_intercept_adj_prediction,
   targets_uncertainty,
   targets_map_model_agreement,
-  targets_moore,
-  targets_food_security#,
-  #targets_historical
+  targets_food_security
 )
       
 
