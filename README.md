@@ -9,9 +9,7 @@ editor_options:
 This repository contains all code used to generate SSP5-RCP8.5 estimates
 for the manuscript, "Predicting changes in agricultural yields from
 climate change scenarios and their implications for global food
-security" (April 27, 2023). The separate repositories used to estimate
-outputs for SSP1-RCP2.6 and SSP2-RCP4.5 can be made available upon
-request. All analysis was performed in the R.4.2.2. environment.
+security" (April 27, 2023). All analysis was performed in the R.4.2.2. environment.
 
 ## Scripts
 
