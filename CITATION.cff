@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it as below."
+authors:
+- family-names: "Li"
+  given-names: "Christine"
+  orcid: "https://orcid.org/0009-0009-4501-5541"
+- family-names: "Camac"
+  given-names: "James"
+  orcid: "https://orcid.org/0000-0003-4785-0742"
+- family-names: "Robinson"
+  given-names: "Andrew"
+  orcid: "https://orcid.org/0000-0002-0509-6043"
+- family-names: "Kompas"
+  given-names: "Tom"
+  orcid: "https://orcid.org/0000-0002-0665-0966"
+title: "Predicting changes in agricultural yields under climate change scenarios and their implications for global food security"
+doi: "https://doi.org/10.1038/s41598-025-87047-y"
+date-released: 2025-01-23
+url: "https://github.com/christineklli/global-yield-impacts"
